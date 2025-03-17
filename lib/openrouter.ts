@@ -1,4 +1,7 @@
-import OpenAI from 'openai';
+// Check if API key is available
+if (!process.env.OPENROUTER_API_KEY) {
+  console.warn('OPENROUTER_API_KEY is not set in environment variables');
+}
 
 const ANALYSIS_HEURISTICS = `
 You are an AI assistant that analyses social media profiles.
@@ -143,26 +146,223 @@ Give answers in detail, and back them up with examples and metrics.
 - Always use action oriented language.
 `;
 
-// Initialize OpenRouter client (server-side only)
-const openai = new OpenAI({
-    apiKey: process.env.OPENROUTER_API_KEY || '',
-    baseURL: "https://openrouter.ai/api/v1",
-    defaultQuery: { 
-      route: "openai" 
-    },
-    defaultHeaders: {
-      "HTTP-Referer": "https://torqueai.com",
-      "X-Title": "Torque AI",
-      "Content-Type": "application/json",
+// Helper function to ensure we have valid JSON
+function ensureValidJson(data: any): any {
+  try {
+    // If it's already a JS object, just return it
+    if (typeof data === 'object' && data !== null) {
+      return data;
     }
-  });
+    
+    // If it's a string, try to parse it
+    if (typeof data === 'string') {
+      return JSON.parse(data);
+    }
+    
+    // If we can't handle it, return a default error object
+    return {
+      error: "Invalid data format",
+      details: "Could not convert to valid JSON"
+    };
+  } catch (error) {
+    console.error('Error ensuring valid JSON:', error);
+    return {
+      error: "JSON parsing failed",
+      details: error instanceof Error ? error.message : "Unknown error"
+    };
+  }
+}
 
-
+/**
+ * General function to analyze a profile using AI
+ */
 export async function analyzeProfile(profileData: string) {
-  const response = await openai.chat.completions.create({
-    model: "anthropic/claude-3.5-sonnet",
-    messages: [{ role: "system", content: ANALYSIS_HEURISTICS }, { role: "user", content: profileData }],
-  });
+  try {
+    console.log('Sending request to OpenRouter API...');
+    
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "HTTP-Referer": "https://torqueai.com", 
+        "X-Title": "Torque AI", 
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        "model": "google/gemini-2.0-flash-001",
+        "messages": [
+          {
+            "role": "system",
+            "content": ANALYSIS_HEURISTICS
+          },
+          {
+            "role": "user",
+            "content": profileData
+          }
+        ],
+        "temperature": 0.3,
+        "max_tokens": 4000
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`OpenRouter API error: ${errorData.error || response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('OpenRouter API response received');
+    
+    if (!data || !data.choices || data.choices.length === 0) {
+      console.error('Unexpected API response format:', JSON.stringify(data));
+      throw new Error('Invalid response format');
+    }
+    
+    return data.choices[0]?.message?.content || '';
+  } catch (error) {
+    console.error('Error in analyzeProfile:', error);
+    return JSON.stringify({
+      error: "Analysis failed",
+      details: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+}
 
-  return response.choices[0]?.message?.content || '';
+/**
+ * Specialized function to generate social media profile stats
+ */
+export async function generateProfileStats(platform: string, username: string, profileData: any) {
+  try {
+    console.log(`Generating stats for ${username} (${platform})...`);
+    
+    // Create a specialized prompt for stats generation
+    const statsPrompt = `
+      You are an AI social media analytics expert analyzing a ${platform} profile for ${username}.
+      Generate profile stats in JSON format with these exact sections:
+      - audienceMetrics: follower count, demographics
+      - contentPerformance: post frequency, engagement rates, top content
+      - engagementInsights: comments, likes, patterns
+      - growthOpportunities: areas to improve, engagement tactics
+      - competitiveAnalysis: industry comparison 
+      - keyTakeaways: most important insights
+
+      Format as {"profileAnalysis": { audienceMetrics: {}, contentPerformance: {}, etc }}
+      Keep all keys as strings and avoid arrays where possible.
+    `;
+
+    // Extract only the essential profile data to reduce payload size
+    let essentialData: Record<string, any> = {};
+    
+    try {
+      if (typeof profileData === 'object' && profileData !== null) {
+        // Extract only what's needed based on platform
+        if (platform === 'instagram') {
+          essentialData = {
+            username: username,
+            followerCount: profileData.followerCount || 'Not Available',
+            followingCount: profileData.followingCount || 'Not Available',
+            postsCount: profileData.postsCount || 'Not Available',
+            bio: profileData.bio || '',
+            postSample: profileData.posts 
+              ? profileData.posts.slice(0, 5).map((post: any) => ({
+                  caption: post.caption,
+                  likeCount: post.likeCount,
+                  commentCount: post.commentCount,
+                  timestamp: post.timestamp
+                }))
+              : []
+          };
+        } else if (platform === 'linkedin') {
+          essentialData = {
+            username: username,
+            headline: profileData.headline || '',
+            summary: profileData.summary || '',
+            followerCount: profileData.followerCount || 'Not Available',
+            connectionCount: profileData.connectionCount || 'Not Available',
+            postSample: profileData.posts 
+              ? profileData.posts.slice(0, 5).map((post: any) => ({
+                  text: post.text,
+                  reactions: post.reactions,
+                  comments: post.comments,
+                  date: post.date
+                }))
+              : []
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('Error extracting essential data, using minimal version:', err);
+      essentialData = { username, platform };
+    }
+    
+    // Convert to string with reasonable size limit
+    const profileDataString = JSON.stringify(essentialData).slice(0, 30000);
+      
+    console.log('Profile data prepared for analysis, calling OpenRouter API');
+
+    // Direct fetch implementation instead of using OpenAI client
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "HTTP-Referer": "https://torqueai.com", 
+        "X-Title": "Torque AI", 
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        "model": "google/gemini-2.0-flash-001",
+        "messages": [
+          {
+            "role": "system",
+            "content": statsPrompt
+          },
+          {
+            "role": "user",
+            "content": profileDataString
+          }
+        ],
+        "temperature": 0.2,
+        "max_tokens": 4000,
+        "response_format": { "type": "json_object" }
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`OpenRouter API error: ${errorData.error || response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Stats generated successfully');
+
+    // Check error
+    if (data.error) {
+      throw new Error(data.error);
+    }
+    
+    if (!data?.choices?.[0]?.message?.content) {
+      throw new Error('Empty response from model');
+    }
+    
+    // Parse the response to ensure it's valid JSON
+    const content = data.choices[0].message.content;
+    let parsedStats: Record<string, any> = {};
+    
+    try {
+      parsedStats = JSON.parse(content);
+      
+      // If response doesn't have profileAnalysis structure, wrap it
+      if (!parsedStats.profileAnalysis) {
+        parsedStats = { profileAnalysis: parsedStats };
+      }
+    } catch (parseError) {
+      console.error('Error parsing response as JSON:', parseError);
+      throw new Error('Invalid JSON response from OpenRouter');
+    }
+    
+    return parsedStats;
+  } catch (error) {
+    console.error('Failed to generate profile stats:', error);
+    throw error; // Propagate error to caller
+  }
 }
