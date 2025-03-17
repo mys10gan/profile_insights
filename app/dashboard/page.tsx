@@ -60,6 +60,18 @@ interface ProfileStats {
   }
 }
 
+// CSS for progress animation
+const progressAnimation = `
+@keyframes progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+`;
+
 export default function Dashboard() {
   const [platform, setPlatform] = useState<'instagram' | 'linkedin'>('instagram')
   const [username, setUsername] = useState('')
@@ -70,6 +82,8 @@ export default function Dashboard() {
   const [loadingProfiles, setLoadingProfiles] = useState(true)
   const [deleteProfileId, setDeleteProfileId] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isDeletingProfile, setIsDeletingProfile] = useState(false)
+  const [deleteProgress, setDeleteProgress] = useState<string | null>(null)
   const [profileStats, setProfileStats] = useState<ProfileStats>({})
   const [dashboardStats, setDashboardStats] = useState({
     totalProfiles: 0,
@@ -333,8 +347,12 @@ export default function Dashboard() {
   }
 
   const handleDeleteProfile = async (id: string) => {
+    setIsDeletingProfile(true)
+    setDeleteProgress('Preparing to delete profile data...')
+    
     try {
       // Delete profile data first (foreign key constraint)
+      setDeleteProgress('Deleting profile data...')
       const { error: dataError } = await supabase
         .from('profile_data')
         .delete()
@@ -351,6 +369,7 @@ export default function Dashboard() {
       }
 
       // Delete any conversations related to this profile
+      setDeleteProgress('Finding related conversations...')
       const { data: conversations, error: convError } = await supabase
         .from('conversations')
         .select('id')
@@ -368,6 +387,7 @@ export default function Dashboard() {
 
       if (conversations && conversations.length > 0) {
         // Delete messages in those conversations
+        setDeleteProgress(`Deleting ${conversations.length} conversation(s) and messages...`)
         for (const conv of conversations) {
           const { error: messagesError } = await supabase
             .from('messages')
@@ -403,6 +423,7 @@ export default function Dashboard() {
       }
 
       // Delete the profile
+      setDeleteProgress('Removing profile...')
       const { error: profileError } = await supabase
         .from('profiles')
         .delete()
@@ -421,6 +442,15 @@ export default function Dashboard() {
 
       // Update the profile list
       setRecentProfiles(prevProfiles => prevProfiles.filter(profile => profile.id !== id))
+      
+      // Update dashboard stats
+      const updatedProfiles = recentProfiles.filter(profile => profile.id !== id)
+      setDashboardStats({
+        totalProfiles: updatedProfiles.length,
+        instagramProfiles: updatedProfiles.filter(p => p.platform === 'instagram').length,
+        linkedinProfiles: updatedProfiles.filter(p => p.platform === 'linkedin').length,
+        lastAnalyzed: updatedProfiles.length > 0 ? updatedProfiles[0].last_scraped : null
+      })
 
       toast({
         title: "Profile deleted",
@@ -434,6 +464,8 @@ export default function Dashboard() {
         description: "Failed to delete profile."
       })
     } finally {
+      setIsDeletingProfile(false)
+      setDeleteProgress(null)
       setIsDeleteDialogOpen(false)
       setDeleteProfileId(null)
     }
@@ -497,373 +529,395 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="container mx-auto max-w-6xl p-4 py-8">
-      <h1 className="text-3xl font-bold">Profile Insights</h1>
+    <>
+      <style jsx global>{progressAnimation}</style>
+      <div className="container mx-auto max-w-6xl p-4 py-8">
+        <h1 className="text-3xl font-bold">Profile Insights</h1>
 
-      {!loadingProfiles && recentProfiles.length > 0 && (
-        <div className="mt-8 mb-8 grid grid-cols-1 gap-4 md:grid-cols-4">
-          <Card className="border border-gray-100 shadow-sm">
-            <CardContent className="flex flex-col items-center justify-center p-6">
-              <div className="mb-4 text-3xl font-bold">{dashboardStats.totalProfiles}</div>
-              <p className="text-sm text-gray-500">Total Profiles</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="border border-gray-100 shadow-sm">
-            <CardContent className="flex flex-col items-center justify-center p-6">
-              <div className="mb-4 text-3xl font-bold">{dashboardStats.instagramProfiles}</div>
-              <p className="text-sm text-gray-500">Instagram Profiles</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="border border-gray-100 shadow-sm">
-            <CardContent className="flex flex-col items-center justify-center p-6">
-              <div className="mb-4 text-3xl font-bold">{dashboardStats.linkedinProfiles}</div>
-              <p className="text-sm text-gray-500">LinkedIn Profiles</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="border border-gray-100 shadow-sm">
-            <CardContent className="flex flex-col items-center justify-center p-6">
-              <div className="text-sm text-gray-500">
-                {dashboardStats.lastAnalyzed 
-                  ? `No recent analysis` 
-                  : 'Recent Activity'}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      <div className="mt-8">
-        <Tabs defaultValue="new" className="w-full">
-          <TabsList className="mb-6 grid w-full grid-cols-2">
-            <TabsTrigger value="new">Create New Analysis</TabsTrigger>
-            <TabsTrigger value="recent">Recent Profiles</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="new" className="space-y-6">
+        {!loadingProfiles && recentProfiles.length > 0 && (
+          <div className="mt-8 mb-8 grid grid-cols-1 gap-4 md:grid-cols-4">
             <Card className="border border-gray-100 shadow-sm">
-              <CardHeader>
-                <CardTitle>Analyze a Social Media Profile</CardTitle>
-                <CardDescription>
-                  Enter the details of the profile you want to analyze for insights
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-8 flex gap-4">
-                  <Button
-                    onClick={() => setPlatform('instagram')}
-                    disabled={loading}
-                    variant={platform === 'instagram' ? 'default' : 'outline'}
-                    className="flex-1 gap-2"
-                  >
-                    <Instagram className="h-4 w-4" />
-                    Instagram
-                  </Button>
-                  <Button
-                    onClick={() => setPlatform('linkedin')}
-                    disabled={loading}
-                    variant={platform === 'linkedin' ? 'default' : 'outline'}
-                    className="flex-1 gap-2"
-                  >
-                    <Linkedin className="h-4 w-4" />
-                    LinkedIn
-                  </Button>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="username">
-                      {platform === 'instagram' ? 'Instagram Username' : 'LinkedIn Profile URL'}
-                    </Label>
-                    <Input
-                      id="username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      placeholder={platform === 'instagram' ? '@username' : 'https://linkedin.com/in/username'}
-                      required
-                      disabled={loading}
-                      className="border-gray-200"
-                    />
-                  </div>
-
-                  <Button 
-                    type="submit"
-                    disabled={loading}
-                    className="w-full"
-                  >
-                    {loading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        {scrapingStage || 'Processing...'}
-                      </span>
-                    ) : (
-                      'Start Analysis'
-                    )}
-                  </Button>
-                </form>
+              <CardContent className="flex flex-col items-center justify-center p-6">
+                <div className="mb-4 text-3xl font-bold">{dashboardStats.totalProfiles}</div>
+                <p className="text-sm text-gray-500">Total Profiles</p>
               </CardContent>
             </Card>
+            
+            <Card className="border border-gray-100 shadow-sm">
+              <CardContent className="flex flex-col items-center justify-center p-6">
+                <div className="mb-4 text-3xl font-bold">{dashboardStats.instagramProfiles}</div>
+                <p className="text-sm text-gray-500">Instagram Profiles</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="border border-gray-100 shadow-sm">
+              <CardContent className="flex flex-col items-center justify-center p-6">
+                <div className="mb-4 text-3xl font-bold">{dashboardStats.linkedinProfiles}</div>
+                <p className="text-sm text-gray-500">LinkedIn Profiles</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="border border-gray-100 shadow-sm">
+              <CardContent className="flex flex-col items-center justify-center p-6">
+                <div className="text-sm text-gray-500">
+                  {dashboardStats.lastAnalyzed 
+                    ? `No recent analysis` 
+                    : 'Recent Activity'}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-            {loading && (
+        <div className="mt-8">
+          <Tabs defaultValue="new" className="w-full">
+            <TabsList className="mb-6 grid w-full grid-cols-2">
+              <TabsTrigger value="new">Create New Analysis</TabsTrigger>
+              <TabsTrigger value="recent">Recent Profiles</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="new" className="space-y-6">
               <Card className="border border-gray-100 shadow-sm">
                 <CardHeader>
-                  <CardTitle>Analysis in Progress</CardTitle>
+                  <CardTitle>Analyze a Social Media Profile</CardTitle>
                   <CardDescription>
-                    Please wait while we analyze the profile
+                    Enter the details of the profile you want to analyze for insights
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <Skeleton className="h-12 w-12 rounded-full" />
+                <CardContent>
+                  <div className="mb-8 flex gap-4">
+                    <Button
+                      onClick={() => setPlatform('instagram')}
+                      disabled={loading}
+                      variant={platform === 'instagram' ? 'default' : 'outline'}
+                      className="flex-1 gap-2"
+                    >
+                      <Instagram className="h-4 w-4" />
+                      Instagram
+                    </Button>
+                    <Button
+                      onClick={() => setPlatform('linkedin')}
+                      disabled={loading}
+                      variant={platform === 'linkedin' ? 'default' : 'outline'}
+                      className="flex-1 gap-2"
+                    >
+                      <Linkedin className="h-4 w-4" />
+                      LinkedIn
+                    </Button>
+                  </div>
+
+                  <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
-                      <Skeleton className="h-4 w-[250px]" />
-                      <Skeleton className="h-4 w-[200px]" />
+                      <Label htmlFor="username">
+                        {platform === 'instagram' ? 'Instagram Username' : 'LinkedIn Profile URL'}
+                      </Label>
+                      <Input
+                        id="username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder={platform === 'instagram' ? '@username' : 'https://linkedin.com/in/username'}
+                        required
+                        disabled={loading}
+                        className="border-gray-200"
+                      />
                     </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>{scrapingStage || 'Processing...'}</span>
-                      <span>{scrapingProgress}%</span>
-                    </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                      <div 
-                        className="h-full bg-black transition-all duration-500 ease-in-out" 
-                        style={{ width: `${scrapingProgress}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
-                  <div className="grid grid-cols-2 gap-4">
-                    <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-24 w-full" />
-                  </div>
+
+                    <Button 
+                      type="submit"
+                      disabled={loading}
+                      className="w-full"
+                    >
+                      {loading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          {scrapingStage || 'Processing...'}
+                        </span>
+                      ) : (
+                        'Start Analysis'
+                      )}
+                    </Button>
+                  </form>
                 </CardContent>
               </Card>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="recent">
-            <Card className="border border-gray-100 shadow-sm">
-              <CardHeader>
-                <CardTitle>Recent Analyses</CardTitle>
-                <CardDescription>
-                  View and manage your previously analyzed profiles
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loadingProfiles ? (
-                  <div className="space-y-3">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center space-x-4">
-                        <Skeleton className="h-12 w-12 rounded-full" />
-                        <div className="space-y-2">
-                          <Skeleton className="h-4 w-[250px]" />
-                          <Skeleton className="h-4 w-[200px]" />
-                        </div>
+
+              {loading && (
+                <Card className="border border-gray-100 shadow-sm">
+                  <CardHeader>
+                    <CardTitle>Analysis in Progress</CardTitle>
+                    <CardDescription>
+                      Please wait while we analyze the profile
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <Skeleton className="h-12 w-12 rounded-full" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-[250px]" />
+                        <Skeleton className="h-4 w-[200px]" />
                       </div>
-                    ))}
-                  </div>
-                ) : recentProfiles.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <User className="h-12 w-12 text-gray-300 mb-4" />
-                    <h3 className="text-lg font-medium">No profiles analyzed yet</h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Start by analyzing a profile in the "Create New Analysis" tab
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {recentProfiles.map((profile) => (
-                      <div 
-                        key={profile.id}
-                        className="relative flex flex-col md:flex-row md:items-start space-y-3 md:space-y-0 md:space-x-4 rounded-lg border border-gray-100 p-4 transition-colors hover:bg-gray-50"
-                      >
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gray-100">
-                          {profile.platform === 'instagram' ? (
-                            <Instagram className="h-6 w-6 text-gray-700" />
-                          ) : (
-                            <Linkedin className="h-6 w-6 text-gray-700" />
-                          )}
-                        </div>
-                        
-                        <div className="min-w-0 flex-1">
-                          <div className="text-lg font-medium">
-                            {profile.username}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>{scrapingStage || 'Processing...'}</span>
+                        <span>{scrapingProgress}%</span>
+                      </div>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                        <div 
+                          className="h-full bg-black transition-all duration-500 ease-in-out" 
+                          style={{ width: `${scrapingProgress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <div className="grid grid-cols-2 gap-4">
+                      <Skeleton className="h-24 w-full" />
+                      <Skeleton className="h-24 w-full" />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="recent">
+              <Card className="border border-gray-100 shadow-sm">
+                <CardHeader>
+                  <CardTitle>Recent Analyses</CardTitle>
+                  <CardDescription>
+                    View and manage your previously analyzed profiles
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loadingProfiles ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex items-center space-x-4">
+                          <Skeleton className="h-12 w-12 rounded-full" />
+                          <div className="space-y-2">
+                            <Skeleton className="h-4 w-[250px]" />
+                            <Skeleton className="h-4 w-[200px]" />
                           </div>
-                          <div className="mt-1 flex items-center gap-x-1.5 text-sm text-gray-500">
-                            <Calendar className="h-4 w-4 flex-none" />
-                            <span>
-                              {profile.last_scraped 
-                                ? `Last updated ${formatDistanceToNow(new Date(profile.last_scraped), { addSuffix: true })}` 
-                                : 'Not yet analyzed'}
-                            </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : recentProfiles.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <User className="h-12 w-12 text-gray-300 mb-4" />
+                      <h3 className="text-lg font-medium">No profiles analyzed yet</h3>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Start by analyzing a profile in the "Create New Analysis" tab
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {recentProfiles.map((profile) => (
+                        <div 
+                          key={profile.id}
+                          className="relative flex flex-col md:flex-row md:items-start space-y-3 md:space-y-0 md:space-x-4 rounded-lg border border-gray-100 p-4 transition-colors hover:bg-gray-50"
+                        >
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gray-100">
+                            {profile.platform === 'instagram' ? (
+                              <Instagram className="h-6 w-6 text-gray-700" />
+                            ) : (
+                              <Linkedin className="h-6 w-6 text-gray-700" />
+                            )}
                           </div>
                           
-                          <div className="mt-2">
-                            <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
-                              {profile.platform === 'instagram' ? 'Instagram' : 'LinkedIn'}
-                            </Badge>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-lg font-medium">
+                              {profile.username}
+                            </div>
+                            <div className="mt-1 flex items-center gap-x-1.5 text-sm text-gray-500">
+                              <Calendar className="h-4 w-4 flex-none" />
+                              <span>
+                                {profile.last_scraped 
+                                  ? `Last updated ${formatDistanceToNow(new Date(profile.last_scraped), { addSuffix: true })}` 
+                                  : 'Not yet analyzed'}
+                              </span>
+                            </div>
                             
-                            <HoverCard>
-                              <HoverCardTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="ml-2 h-6 px-2 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                                  onClick={() => fetchProfileStats(profile.id)}
-                                >
-                                  Preview Stats
-                                </Button>
-                              </HoverCardTrigger>
-                              <HoverCardContent className="w-80 border border-gray-100 shadow-sm">
-                                <div className="space-y-2">
-                                  <h4 className="text-sm font-semibold">{profile.username}</h4>
-                                  <div className="grid grid-cols-2 gap-2 text-xs">
-                                    {profile.platform === 'instagram' ? (
-                                      <>
-                                        <div className="flex items-center gap-1">
-                                          <User className="h-3 w-3 text-gray-600" />
-                                          <span className="font-medium text-gray-700">Followers:</span> 
-                                          <span className="text-gray-600">
-                                            {profileStats[profile.id]?.loading ? 
-                                              'Loading...' : 
-                                              profileStats[profile.id]?.followers?.toLocaleString() || 'N/A'}
-                                          </span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                          <BarChart className="h-3 w-3 text-gray-600" />
-                                          <span className="font-medium text-gray-700">Posts:</span> 
-                                          <span className="text-gray-600">
-                                            {profileStats[profile.id]?.loading ? 
-                                              'Loading...' : 
-                                              profileStats[profile.id]?.posts?.toLocaleString() || 'N/A'}
-                                          </span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                          <TrendingUp className="h-3 w-3 text-gray-600" />
-                                          <span className="font-medium text-gray-700">Engagement:</span> 
-                                          <span className="text-gray-600">
-                                            {profileStats[profile.id]?.loading ? 
-                                              'Loading...' : 
-                                              profileStats[profile.id]?.engagement || 'N/A'}
-                                          </span>
-                                        </div>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <div className="flex items-center gap-1">
-                                          <User className="h-3 w-3 text-gray-600" />
-                                          <span className="font-medium text-gray-700">Connections:</span> 
-                                          <span className="text-gray-600">
-                                            {profileStats[profile.id]?.loading ? 
-                                              'Loading...' : 
-                                              profileStats[profile.id]?.connections || 'N/A'}
-                                          </span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                          <BarChart className="h-3 w-3 text-gray-600" />
-                                          <span className="font-medium text-gray-700">Posts:</span> 
-                                          <span className="text-gray-600">
-                                            {profileStats[profile.id]?.loading ? 
-                                              'Loading...' : 
-                                              profileStats[profile.id]?.posts?.toLocaleString() || 'N/A'}
-                                          </span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                          <TrendingUp className="h-3 w-3 text-gray-600" />
-                                          <span className="font-medium text-gray-700">Skills:</span> 
-                                          <span className="text-gray-600">
-                                            {profileStats[profile.id]?.loading ? 
-                                              'Loading...' : 
-                                              profileStats[profile.id]?.skills?.toLocaleString() || 'N/A'}
-                                          </span>
-                                        </div>
-                                      </>
-                                    )}
-                                  </div>
+                            <div className="mt-2">
+                              <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
+                                {profile.platform === 'instagram' ? 'Instagram' : 'LinkedIn'}
+                              </Badge>
+                              
+                              <HoverCard>
+                                <HoverCardTrigger asChild>
                                   <Button 
-                                    variant="outline" 
+                                    variant="ghost" 
                                     size="sm" 
-                                    onClick={() => router.push(`/analysis/${profile.id}`)}
-                                    className="w-full mt-2 border-gray-200 text-gray-700 hover:bg-gray-50"
+                                    className="ml-2 h-6 px-2 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                                    onClick={() => fetchProfileStats(profile.id)}
                                   >
-                                    View Full Analysis
+                                    Preview Stats
                                   </Button>
-                                </div>
-                              </HoverCardContent>
-                            </HoverCard>
+                                </HoverCardTrigger>
+                                <HoverCardContent className="w-80 border border-gray-100 shadow-sm">
+                                  <div className="space-y-2">
+                                    <h4 className="text-sm font-semibold">{profile.username}</h4>
+                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                      {profile.platform === 'instagram' ? (
+                                        <>
+                                          <div className="flex items-center gap-1">
+                                            <User className="h-3 w-3 text-gray-600" />
+                                            <span className="font-medium text-gray-700">Followers:</span> 
+                                            <span className="text-gray-600">
+                                              {profileStats[profile.id]?.loading ? 
+                                                'Loading...' : 
+                                                profileStats[profile.id]?.followers?.toLocaleString() || 'N/A'}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center gap-1">
+                                            <BarChart className="h-3 w-3 text-gray-600" />
+                                            <span className="font-medium text-gray-700">Posts:</span> 
+                                            <span className="text-gray-600">
+                                              {profileStats[profile.id]?.loading ? 
+                                                'Loading...' : 
+                                                profileStats[profile.id]?.posts?.toLocaleString() || 'N/A'}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center gap-1">
+                                            <TrendingUp className="h-3 w-3 text-gray-600" />
+                                            <span className="font-medium text-gray-700">Engagement:</span> 
+                                            <span className="text-gray-600">
+                                              {profileStats[profile.id]?.loading ? 
+                                                'Loading...' : 
+                                                profileStats[profile.id]?.engagement || 'N/A'}
+                                            </span>
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <div className="flex items-center gap-1">
+                                            <User className="h-3 w-3 text-gray-600" />
+                                            <span className="font-medium text-gray-700">Connections:</span> 
+                                            <span className="text-gray-600">
+                                              {profileStats[profile.id]?.loading ? 
+                                                'Loading...' : 
+                                                profileStats[profile.id]?.connections || 'N/A'}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center gap-1">
+                                            <BarChart className="h-3 w-3 text-gray-600" />
+                                            <span className="font-medium text-gray-700">Posts:</span> 
+                                            <span className="text-gray-600">
+                                              {profileStats[profile.id]?.loading ? 
+                                                'Loading...' : 
+                                                profileStats[profile.id]?.posts?.toLocaleString() || 'N/A'}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center gap-1">
+                                            <TrendingUp className="h-3 w-3 text-gray-600" />
+                                            <span className="font-medium text-gray-700">Skills:</span> 
+                                            <span className="text-gray-600">
+                                              {profileStats[profile.id]?.loading ? 
+                                                'Loading...' : 
+                                                profileStats[profile.id]?.skills?.toLocaleString() || 'N/A'}
+                                            </span>
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm" 
+                                      onClick={() => router.push(`/analysis/${profile.id}`)}
+                                      className="w-full mt-2 border-gray-200 text-gray-700 hover:bg-gray-50"
+                                    >
+                                      View Full Analysis
+                                    </Button>
+                                  </div>
+                                </HoverCardContent>
+                              </HoverCard>
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-2 md:justify-end">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => router.push(`/analysis/${profile.id}`)}
+                              className="gap-1.5 border-gray-200 text-gray-700 hover:bg-gray-50"
+                            >
+                              <TrendingUp className="h-4 w-4" />
+                              View Analysis
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => router.push(`/chat/${profile.id}`)}
+                              className="gap-1.5 border-gray-200 text-gray-700 hover:bg-gray-50"
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                              Chat
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="text-gray-700 border-gray-200 hover:bg-gray-50"
+                              onClick={() => {
+                                setDeleteProfileId(profile.id);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1.5" />
+                              Delete
+                            </Button>
                           </div>
                         </div>
-                        
-                        <div className="flex flex-wrap gap-2 md:justify-end">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => router.push(`/analysis/${profile.id}`)}
-                            className="gap-1.5 border-gray-200 text-gray-700 hover:bg-gray-50"
-                          >
-                            <TrendingUp className="h-4 w-4" />
-                            View Analysis
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => router.push(`/chat/${profile.id}`)}
-                            className="gap-1.5 border-gray-200 text-gray-700 hover:bg-gray-50"
-                          >
-                            <MessageSquare className="h-4 w-4" />
-                            Chat
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="text-gray-700 border-gray-200 hover:bg-gray-50"
-                            onClick={() => {
-                              setDeleteProfileId(profile.id);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 mr-1.5" />
-                            Delete
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
 
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="border border-gray-100 shadow-sm">
-          <DialogHeader>
-            <DialogTitle>Delete Profile</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this profile? This will remove all analysis data and chat history associated with this profile.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} className="border-gray-200 text-gray-700 hover:bg-gray-50">
-              Cancel
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={() => deleteProfileId && handleDeleteProfile(deleteProfileId)}
-            >
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+        <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
+          if (!isDeletingProfile) {
+            setIsDeleteDialogOpen(open)
+          }
+        }}>
+          <DialogContent className="border border-gray-100 shadow-sm">
+            <DialogHeader>
+              <DialogTitle>Delete Profile</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this profile? This will remove all analysis data and chat history associated with this profile.
+              </DialogDescription>
+            </DialogHeader>
+            {isDeletingProfile ? (
+              <div className="py-4 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>{deleteProgress || 'Deleting profile...'}</span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                  <div 
+                    className="h-full bg-red-500 transition-all duration-500 ease-in-out" 
+                    style={{ width: '100%', animation: 'progress 1.5s ease-in-out infinite' }}
+                  ></div>
+                </div>
+              </div>
+            ) : (
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} className="border-gray-200 text-gray-700 hover:bg-gray-50">
+                  Cancel
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={() => deleteProfileId && handleDeleteProfile(deleteProfileId)}
+                >
+                  Delete
+                </Button>
+              </DialogFooter>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    </>
   )
 } 
