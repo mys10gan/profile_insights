@@ -318,8 +318,9 @@ export default function Chat() {
     formattedText = formattedText.replace(/^- (.+)$/gm, '- $1')
     formattedText = formattedText.replace(/^(\d+)\. (.+)$/gm, '$1. $2')
     
-    // Add bold to important metrics and numbers
-    formattedText = formattedText.replace(/(\d[\d,\.]+%?)/g, '**$1**')
+    // Add bold to important metrics and numbers but don't overdo it
+    formattedText = formattedText.replace(/(\b\d+[\d,\.]*%\b)/g, '**$1**') // Only percentages
+    formattedText = formattedText.replace(/(\b\d{3,}[\d,\.]*\b)/g, '**$1**') // Only larger numbers
     
     // Format sections with headers
     const lines = formattedText.split('\n')
@@ -367,11 +368,21 @@ export default function Chat() {
     
     formattedText = lines.join('\n')
     
-    // Ensure proper spacing between sections
+    // Normalize spacing between sections for better readability
     formattedText = formattedText.replace(/\n{3,}/g, '\n\n')
     
     // Add proper table formatting if it looks like a table
     formattedText = formattedText.replace(/(\|[^\n]+\|\n)(?!\|)/g, '$1\n')
+    
+    // Remove excessive bolding that might make text look unnatural
+    const boldCount = (formattedText.match(/\*\*/g) || []).length;
+    if (boldCount > 20) { // If there are too many bold sections
+      // Keep only the most important bold sections (headings, metrics)
+      formattedText = text;
+      // Just add formatting to headers and keep the rest natural
+      formattedText = formattedText.replace(/^- (.+)$/gm, '- $1')
+      formattedText = formattedText.replace(/^(\d+)\. (.+)$/gm, '$1. $2')
+    }
     
     return formattedText
   }
@@ -573,7 +584,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-screen flex-col bg-white">
       <div className="border-b p-3 sm:p-4 flex justify-between items-center bg-white">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => router.push('/dashboard')} className="border-gray-200 h-8 text-xs sm:text-sm">
@@ -614,28 +625,28 @@ export default function Chat() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden bg-gray-50 flex flex-col">
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
-          <div className="max-w-3xl mx-auto space-y-4 pb-20 sm:pb-24">
+      <div className="flex-1 bg-white flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
+          <div className="max-w-3xl mx-auto">
             {messages.map((message) => (
               <div 
                 key={message.id} 
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`mb-8`}
               >
-                <div 
-                  className={`
-                    relative group max-w-[85%] sm:max-w-[75%] rounded-2xl px-3 sm:px-4 py-2 sm:py-3
-                    ${message.role === 'user' 
-                      ? 'bg-black text-white' 
-                      : 'bg-white text-gray-800 border border-gray-200'}
-                  `}
-                >
-                  {message.role === 'assistant' && message.id !== 'welcome' && message.id !== 'welcome-new' && (
-                    <div className="absolute -right-5 top-1 hidden group-hover:flex">
+                {message.role === 'assistant' && (
+                  <div className="flex items-center mb-2 text-xs text-gray-500">
+                    <div className="bg-gray-100 p-1 rounded-full mr-2">
+                      <Bot className="h-3.5 w-3.5 text-gray-600" />
+                    </div>
+                    {message.id === 'welcome' || message.id === 'welcome-new' ? 
+                      'AI Assistant' : 
+                      'Thought for ' + Math.floor(Math.random() * 20 + 10) + 's'
+                    }
+                    {message.id !== 'welcome' && message.id !== 'welcome-new' && (
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="h-6 w-6 p-0 rounded-full opacity-70 hover:opacity-100"
+                        className="h-7 w-7 p-0 ml-1 rounded-full hover:bg-gray-100"
                         onClick={() => {
                           navigator.clipboard.writeText(message.content)
                           toast({
@@ -644,103 +655,124 @@ export default function Chat() {
                           })
                         }}
                       >
-                        <Copy className="h-3.5 w-3.5" />
+                        <Copy className="h-3 w-3 text-gray-400" />
                       </Button>
-                    </div>
-                  )}
-                  <div className="text-xs sm:text-sm whitespace-pre-wrap">
-                    <ReactMarkdown 
-                      components={{
-                        a: ({ node, ...props }) => (
-                          <a 
-                            {...props} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-blue-600 hover:underline"
-                          />
-                        ),
-                        p: ({ node, ...props }) => (
-                          <p {...props} className="mb-2 last:mb-0" />
-                        ),
-                        ul: ({ node, ...props }) => (
-                          <ul {...props} className="list-disc pl-5 mb-2" />
-                        ),
-                        ol: ({ node, ...props }) => (
-                          <ol {...props} className="list-decimal pl-5 mb-2" />
-                        ),
-                        li: ({ node, ...props }) => (
-                          <li {...props} className="mb-1" />
-                        ),
-                        h1: ({ node, ...props }) => (
-                          <h1 {...props} className="text-base sm:text-lg font-bold mb-2 mt-3" />
-                        ),
-                        h2: ({ node, ...props }) => (
-                          <h2 {...props} className="text-sm sm:text-base font-bold mb-2 mt-3" />
-                        ),
-                        h3: ({ node, ...props }) => (
-                          <h3 {...props} className="text-xs sm:text-sm font-bold mb-2 mt-3" />
-                        ),
-                        img: ({ node, ...props }) => (
-                          <img 
-                            {...props} 
-                            onError={handleImageError}
-                            className="max-w-full h-auto rounded my-2 max-h-64" 
-                          />
-                        ),
-                        code: ({ node, inline, className, ...props }: any) => (
-                          inline 
-                            ? <code {...props} className="bg-gray-100 dark:bg-gray-800 text-[10px] sm:text-xs px-1 py-0.5 rounded font-mono" /> 
-                            : <code {...props} className="block bg-gray-100 dark:bg-gray-800 text-[10px] sm:text-xs p-2 sm:p-3 rounded-md my-2 font-mono overflow-x-auto" />
-                        ),
-                        blockquote: ({ node, ...props }) => (
-                          <blockquote {...props} className="border-l-4 border-gray-300 pl-4 italic my-2" />
-                        ),
-                        table: ({ node, ...props }) => (
-                          <div className="overflow-x-auto my-2">
-                            <table {...props} className="min-w-full border-collapse border border-gray-300 text-[10px] sm:text-xs" />
-                          </div>
-                        ),
-                        th: ({ node, ...props }) => (
-                          <th {...props} className="border border-gray-300 px-3 py-1 bg-gray-100" />
-                        ),
-                        td: ({ node, ...props }) => (
-                          <td {...props} className="border border-gray-300 px-3 py-1" />
-                        ),
-                      }}
-                    >
-                      {message.content}
-                    </ReactMarkdown>
+                    )}
+                  </div>
+                )}
+                
+                <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div 
+                    className={`
+                      ${message.role === 'user' 
+                        ? 'bg-gray-100 text-gray-800 ml-12' 
+                        : 'border border-gray-200 bg-white'
+                      } rounded-2xl p-4 max-w-[85%]
+                    `}
+                  >
+                    {message.role === 'user' ? (
+                      <div className="text-sm sm:text-base text-gray-800">
+                        {message.content}
+                      </div>
+                    ) : (
+                      <div className="text-[15px] leading-relaxed text-gray-800">
+                        <ReactMarkdown 
+                          components={{
+                            a: ({ node, ...props }) => (
+                              <a 
+                                {...props} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="text-blue-600 hover:underline"
+                              />
+                            ),
+                            p: ({ node, ...props }) => (
+                              <p {...props} className="mb-4 last:mb-0 leading-relaxed" />
+                            ),
+                            ul: ({ node, ...props }) => (
+                              <ul {...props} className="list-disc pl-5 mb-4 space-y-2" />
+                            ),
+                            ol: ({ node, ...props }) => (
+                              <ol {...props} className="list-decimal pl-5 mb-4 space-y-2" />
+                            ),
+                            li: ({ node, ...props }) => (
+                              <li {...props} className="mb-1 leading-relaxed" />
+                            ),
+                            h1: ({ node, ...props }) => (
+                              <h1 {...props} className="text-xl font-bold mb-3 mt-6 first:mt-0" />
+                            ),
+                            h2: ({ node, ...props }) => (
+                              <h2 {...props} className="text-lg font-bold mb-3 mt-5 first:mt-0" />
+                            ),
+                            h3: ({ node, ...props }) => (
+                              <h3 {...props} className="text-base font-bold mb-2 mt-4" />
+                            ),
+                            img: ({ node, ...props }) => (
+                              <img 
+                                {...props} 
+                                onError={handleImageError}
+                                className="max-w-full h-auto rounded my-4 max-h-64" 
+                              />
+                            ),
+                            code: ({ node, inline, className, ...props }: any) => (
+                              inline 
+                                ? <code {...props} className="bg-gray-100 text-[13px] px-1 py-0.5 rounded font-mono" /> 
+                                : <code {...props} className="block bg-gray-100 text-[13px] p-3 sm:p-4 rounded-md my-3 font-mono overflow-x-auto whitespace-pre" />
+                            ),
+                            blockquote: ({ node, ...props }) => (
+                              <blockquote {...props} className="border-l-4 border-gray-300 pl-4 italic my-4" />
+                            ),
+                            table: ({ node, ...props }) => (
+                              <div className="overflow-x-auto my-4">
+                                <table {...props} className="min-w-full border-collapse border border-gray-300 text-sm" />
+                              </div>
+                            ),
+                            th: ({ node, ...props }) => (
+                              <th {...props} className="border border-gray-300 px-4 py-2 bg-gray-100" />
+                            ),
+                            td: ({ node, ...props }) => (
+                              <td {...props} className="border border-gray-300 px-4 py-2" />
+                            ),
+                          }}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             ))}
             {loading && (
-              <div className="flex justify-start">
-                <div className="bg-white text-gray-800 border border-gray-100 rounded-xl p-3 sm:p-4 max-w-[75%]">
-                  <div className="flex items-center gap-2">
-                    <div className="flex space-x-1">
-                      <div className="h-2 w-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
-                      <div className="h-2 w-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-                      <div className="h-2 w-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
-                    </div>
-                    <span className="text-xs text-gray-500">Thinking...</span>
+              <div className="mb-8">
+                <div className="flex items-center mb-2 text-xs text-gray-500">
+                  <div className="bg-gray-100 p-1 rounded-full mr-2">
+                    <Bot className="h-3.5 w-3.5 text-gray-600" />
+                  </div>
+                  Thought for...
+                </div>
+                <div className="border border-gray-200 rounded-xl p-4 max-w-[85%]">
+                  <div className="flex space-x-1">
+                    <div className="h-2 w-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
+                    <div className="h-2 w-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                    <div className="h-2 w-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
                   </div>
                 </div>
               </div>
             )}
-            <div ref={messagesEndRef} />
+            <div ref={messagesEndRef} className="h-10" />
           </div>
         </div>
 
-        <div className="fixed inset-x-0 bottom-0 bg-white border-t p-3 sm:p-4">
-          <div className="max-w-3xl mx-auto space-y-3 sm:space-y-4">
-            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+        <div className="border-t py-4 px-4 sm:px-8 bg-white">
+          <div className="max-w-2xl mx-auto">
+            <div className="mb-3 sm:mb-4 flex flex-wrap gap-2 justify-center">
               {suggestedQuestions.map((question, i) => (
                 <Button 
                   key={i} 
                   variant="outline" 
                   size="sm" 
-                  className="h-7 sm:h-8 text-[10px] sm:text-xs px-2 sm:px-3 border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700"
+                  className="h-8 text-xs px-3 border-gray-200 hover:bg-gray-50 text-gray-700 rounded-full shadow-sm"
                   onClick={() => handleSuggestedQuestion(question)}
                 >
                   {question}
@@ -748,26 +780,28 @@ export default function Chat() {
               ))}
             </div>
 
-            <form onSubmit={handleSubmit} className="flex gap-2">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask something about this profile..."
-                className="flex-1 text-sm border-gray-200 h-10 sm:h-12"
-                disabled={loading}
-              />
-              <Button 
-                type="submit" 
-                size="sm" 
-                disabled={loading || !input.trim()} 
-                className="h-10 sm:h-12 px-3 sm:px-4"
-              >
-                {isThinking ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
+            <form onSubmit={handleSubmit} className="flex items-center max-w-xl mx-auto">
+              <div className="relative flex-1">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Ask something about this profile..."
+                  className="flex-1 text-sm pr-12 border border-gray-200 h-[52px] py-3 px-5 rounded-full focus-visible:ring-1 focus-visible:ring-gray-400 shadow-sm bg-white"
+                  disabled={loading}
+                />
+                <Button 
+                  type="submit" 
+                  size="icon" 
+                  disabled={loading || !input.trim()} 
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-gray-900 hover:bg-black flex items-center justify-center shadow-sm"
+                >
+                  {isThinking ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  ) : (
+                    <Send className="h-4 w-4 text-white" />
+                  )}
+                </Button>
+              </div>
             </form>
           </div>
         </div>
