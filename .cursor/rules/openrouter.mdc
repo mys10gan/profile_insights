@@ -137,11 +137,11 @@ In the examples below, the OpenRouter-specific headers are optional. Setting the
   ```
 </CodeGroup>
 
-The API also supports [streaming](/docs/api-reference/streaming).
+The API also supports [streaming](mdc:docs/api-reference/streaming).
 
 ## Using third-party SDKs
 
-For information about using third-party SDKs and frameworks with OpenRouter, please [see our frameworks documentation.](/docs/community/frameworks)
+For information about using third-party SDKs and frameworks with OpenRouter, please [see our frameworks documentation.](mdc:docs/community/frameworks)
 
 
 # Frequently Asked Questions
@@ -163,19 +163,19 @@ For information about using third-party SDKs and frameworks with OpenRouter, ple
 
   <Accordion title="How do I get started with OpenRouter?">
     To get started, create an account and add credits on the
-    [Credits](https://openrouter.ai/settings/credits) page. Credits are simply
+    [Credits](mdc:https:/openrouter.ai/settings/credits) page. Credits are simply
     deposits on OpenRouter that you use for LLM inference.
     When you use the API or chat interface, we deduct the request cost from your
     credits. Each model and provider has a different price per million tokens.
 
     Once you have credits you can either use the chat room, or create API keys
-    and start using the API. You can read our [quickstart](/docs/quickstart)
+    and start using the API. You can read our [quickstart](mdc:docs/quickstart)
     guide for code samples and more.
   </Accordion>
 
   <Accordion title="How do I get support?">
     The best way to get support is to join our
-    [Discord](https://discord.gg/fVyRaUDgxW) and ping us in the #help forum.
+    [Discord](mdc:https:/discord.gg/fVyRaUDgxW) and ping us in the #help forum.
   </Accordion>
 
   <Accordion title="How do I get billed for my usage on OpenRouter?">
@@ -186,10 +186,10 @@ For information about using third-party SDKs and frameworks with OpenRouter, ple
 
     When you make a request to OpenRouter, we receive the total number of tokens processed
     by the provider. We then calculate the corresponding cost and deduct it from your credits.
-    You can review your complete usage history in the [Activity tab](https://openrouter.ai/activity).
+    You can review your complete usage history in the [Activity tab](mdc:https:/openrouter.ai/activity).
 
     We pass through the pricing of the underlying providers; there is no markup
-    on inference pricing (however we do charge a [fee](https://openrouter.ai/terms#_4_-payment) when purchasing credits).
+    on inference pricing (however we do charge a [fee](mdc:https:/openrouter.ai/terms#_4_-payment) when purchasing credits).
   </Accordion>
 </AccordionGroup>
 
@@ -198,20 +198,20 @@ For information about using third-party SDKs and frameworks with OpenRouter, ple
 <AccordionGroup>
   <Accordion title="What LLM models does OpenRouter support?">
     OpenRouter provides access to a wide variety of LLM models, including frontier models from major AI labs.
-    For a complete list of models you can visit the [models browser](https://openrouter.ai/models) or fetch the list through the [models api](https://openrouter.ai/api/v1/models).
+    For a complete list of models you can visit the [models browser](mdc:https:/openrouter.ai/models) or fetch the list through the [models api](mdc:https:/openrouter.ai/api/v1/models).
   </Accordion>
 
   <Accordion title="How frequently are new models added?">
     We work on adding models as quickly as we can. We often have partnerships with
     the labs releasing models and can release models as soon as they are
     available. If there is a model missing that you'd like OpenRouter to support, feel free to message us on
-    [Discord](https://discord.gg/fVyRaUDgxW).
+    [Discord](mdc:https:/discord.gg/fVyRaUDgxW).
   </Accordion>
 
   <Accordion title="What are model variants?">
     Variants are suffixes that can be added to the model slug to change its behavior.
 
-    Static variants can only be used with specific models and these are listed in our [models api](https://openrouter.ai/api/v1/models).
+    Static variants can only be used with specific models and these are listed in our [models api](mdc:https:/openrouter.ai/api/v1/models).
 
     1. `:free` - The model is always provided for free and has low rate limits.
     2. `:beta` - The model is not moderated by OpenRouter.
@@ -242,7 +242,7 @@ For information about using third-party SDKs and frameworks with OpenRouter, ple
     If a provider returns an error OpenRouter will automatically fall back to the
     next provider. This happens transparently to the user and allows production
     apps to be much more resilient. OpenRouter has a lot of options to configure
-    the provider routing behavior. The full documentation can be found [here](/docs/features/provider-routing).
+    the provider routing behavior. The full documentation can be found [here](mdc:docs/features/provider-routing).
   </Accordion>
 </AccordionGroup>
 
@@ -254,26 +254,26 @@ For information about using third-party SDKs and frameworks with OpenRouter, ple
 
     1. Cookie-based authentication for the web interface and chatroom
     2. API keys (passed as Bearer tokens) for accessing the completions API and other core endpoints
-    3. [Provisioning API keys](/docs/features/provisioning-api-keys) for programmatically managing API keys through the key management endpoints
+    3. [Provisioning API keys](mdc:docs/features/provisioning-api-keys) for programmatically managing API keys through the key management endpoints
   </Accordion>
 
   <Accordion title="How are rate limits calculated?">
     Your account has a hard limit of 200 requests per day total across all free models.
     For all other models, rate limits are determined by the credits in your account. You can read more
-    details in our [rate limits documentation](/docs/api-reference/limits).
+    details in our [rate limits documentation](mdc:docs/api-reference/limits).
   </Accordion>
 
   <Accordion title="What API endpoints are available?">
     OpenRouter implements the OpenAI API specification for /completions and
     /chat/completions endpoints, allowing you to use any model with the same
     request/response format. Additional endpoints like /api/v1/models are also
-    available. See our [API documentation](/docs/api-reference/overview) for
+    available. See our [API documentation](mdc:docs/api-reference/overview) for
     detailed specifications.
   </Accordion>
 
   <Accordion title="What are the supported formats?">
     The API supports text and images.
-    [Images](/docs/api-reference/overview#images--multimodal) can be passed as
+    [Images](mdc:docs/api-reference/overview#images--multimodal) can be passed as
     URLs or base64 encoded images. PDF and other file types are coming soon.
   </Accordion>
 
@@ -285,13 +285,13 @@ For information about using third-party SDKs and frameworks with OpenRouter, ple
   <Accordion title="What SDK support is available?">
     OpenRouter is a drop-in replacement for OpenAI. Therefore, any SDKs that
     support OpenAI by default also support OpenRouter. Check out our
-    [docs](/docs/frameworks) for more details.
+    [docs](mdc:docs/frameworks) for more details.
   </Accordion>
 </AccordionGroup>
 
 ## Privacy and Data Logging
 
-Please see our [Terms of Service](https://openrouter.ai/terms) and [Privacy Policy](https://openrouter.ai/privacy).
+Please see our [Terms of Service](mdc:https:/openrouter.ai/terms) and [Privacy Policy](mdc:https:/openrouter.ai/privacy).
 
 <AccordionGroup>
   <Accordion title="What data is logged during API use?">
@@ -299,7 +299,7 @@ Please see our [Terms of Service](https://openrouter.ai/terms) and [Privacy Poli
     and completion are not logged by default. We do zero logging of your prompts/completions,
     even if an error occurs, unless you opt-in to logging them.
 
-    We have an opt-in [setting](https://openrouter.ai/settings/privacy) that
+    We have an opt-in [setting](mdc:https:/openrouter.ai/settings/privacy) that
     lets users opt-in to log their prompts and completions in exchange for a 1%
     discount on usage costs.
   </Accordion>
@@ -314,9 +314,9 @@ Please see our [Terms of Service](https://openrouter.ai/terms) and [Privacy Poli
     OpenRouter is a proxy that sends your requests to the model provider for it to be completed.
     We work with all providers to, when possible, ensure that prompts and completions are not logged or used for training.
     Providers that do log, or where we have been unable to confirm their policy, will not be routed to unless the model training
-    toggle is switched on in the [privacy settings](https://openrouter.ai/settings/privacy) tab.
+    toggle is switched on in the [privacy settings](mdc:https:/openrouter.ai/settings/privacy) tab.
 
-    If you specify [provider routing](/docs/features/provider-routing) in your request, but none of the providers
+    If you specify [provider routing](mdc:docs/features/provider-routing) in your request, but none of the providers
     match the level of privacy specified in your account settings, you will get an error and your request will not complete.
   </Accordion>
 </AccordionGroup>
@@ -332,17 +332,17 @@ Please see our [Terms of Service](https://openrouter.ai/terms) and [Privacy Poli
   </Accordion>
 
   <Accordion title="Do credits expire?">
-    Per our [terms](https://openrouter.ai/terms), we reserve the right to expire
+    Per our [terms](mdc:https:/openrouter.ai/terms), we reserve the right to expire
     unused credits after one year of purchase.
   </Accordion>
 
   <Accordion title="My credits haven't showed up in my account">
     If you paid using Stripe, sometimes there is an issue with the Stripe
     integration and credits can get delayed in showing up on your account. Please allow up to one hour.
-    If your credits still have not appeared after an hour, contact us on [Discord](https://discord.gg/fVyRaUDgxW) and we will
+    If your credits still have not appeared after an hour, contact us on [Discord](mdc:https:/discord.gg/fVyRaUDgxW) and we will
     look into it.
 
-    If you paid using crypto, please reach out to us on [Discord](https://discord.gg/fVyRaUDgxW)
+    If you paid using crypto, please reach out to us on [Discord](mdc:https:/discord.gg/fVyRaUDgxW)
     and we will look into it.
   </Accordion>
 
@@ -351,16 +351,16 @@ Please see our [Terms of Service](https://openrouter.ai/terms) and [Privacy Poli
   </Accordion>
 
   <Accordion title="How to monitor credit usage?">
-    The [Activity](https://openrouter.ai/activity) page allows users to view
+    The [Activity](mdc:https:/openrouter.ai/activity) page allows users to view
     their historic usage and filter the usage by model, provider and api key.
 
-    We also provide a [credits api](/docs/api-reference/get-credits) that has
+    We also provide a [credits api](mdc:docs/api-reference/get-credits) that has
     live information about the balance and remaining credits for the account.
   </Accordion>
 
   <Accordion title="What free tier options exist?">
     All new users receive a very small free allowance to be able to test out OpenRouter.
-    There are many [free models](https://openrouter.ai/models?max_price=0) available
+    There are many [free models](mdc:https:/openrouter.ai/models?max_price=0) available
     on OpenRouter, it is important to note that these models have low rate limits (200 requests per day total)
     and are usually not suitable for production use.
   </Accordion>
@@ -373,11 +373,11 @@ Please see our [Terms of Service](https://openrouter.ai/terms) and [Privacy Poli
   <Accordion title="What payment methods are accepted?">
     We accept all major credit cards, AliPay and cryptocurrency payments in
     USDC. We are working on integrating PayPal soon, if there are any payment
-    methods that you would like us to support please reach out on [Discord](https://discord.gg/fVyRaUDgxW).
+    methods that you would like us to support please reach out on [Discord](mdc:https:/discord.gg/fVyRaUDgxW).
   </Accordion>
 
   <Accordion title="How does OpenRouter make money?">
-    We charge a small [fee](https://openrouter.ai/terms#_4_-payment) when purchasing credits. We never mark-up the pricing
+    We charge a small [fee](mdc:https:/openrouter.ai/terms#_4_-payment) when purchasing credits. We never mark-up the pricing
     of the underlying providers, and you'll always pay the same as the provider's
     listed price.
   </Accordion>
@@ -387,7 +387,7 @@ Please see our [Terms of Service](https://openrouter.ai/terms) and [Privacy Poli
 
 <AccordionGroup>
   <Accordion title="How can I delete my account?">
-    Go to the [Settings](https://openrouter.ai/settings/preferences) page and click Manage Account.
+    Go to the [Settings](mdc:https:/openrouter.ai/settings/preferences) page and click Manage Account.
     In the modal that opens, select the Security tab. You'll find an option there to delete your account.
 
     Note that unused credits will be lost and cannot be reclaimed if you delete and later recreate your account.
@@ -400,14 +400,14 @@ Please see our [Terms of Service](https://openrouter.ai/terms) and [Privacy Poli
   </Accordion>
 
   <Accordion title="What analytics are available?">
-    Our [activity dashboard](https://openrouter.ai/activity) provides real-time
+    Our [activity dashboard](mdc:https:/openrouter.ai/activity) provides real-time
     usage metrics. If you would like any specific reports or metrics please
     contact us.
   </Accordion>
 
   <Accordion title="How can I contact support?">
     The best way to reach us is to join our
-    [Discord](https://discord.gg/fVyRaUDgxW) and ping us in the #help forum.
+    [Discord](mdc:https:/discord.gg/fVyRaUDgxW) and ping us in the #help forum.
   </Accordion>
 </AccordionGroup>
 
@@ -420,11 +420,11 @@ OpenRouter helps developers source and optimize AI usage. We believe the future 
 
 ## Why OpenRouter?
 
-**Price and Performance**. OpenRouter scouts for the best prices, the lowest latencies, and the highest throughput across dozens of providers, and lets you choose how to [prioritize](/docs/features/provider-routing) them.
+**Price and Performance**. OpenRouter scouts for the best prices, the lowest latencies, and the highest throughput across dozens of providers, and lets you choose how to [prioritize](mdc:docs/features/provider-routing) them.
 
-**Standardized API**. No need to change code when switching between models or providers. You can even let your users [choose and pay for their own](/docs/use-cases/oauth-pkce).
+**Standardized API**. No need to change code when switching between models or providers. You can even let your users [choose and pay for their own](mdc:docs/use-cases/oauth-pkce).
 
-**Real-World Insights**. Be the first to take advantage of new models. See real-world data of [how often models are used](https://openrouter.ai/rankings) for different purposes. Keep up to date in our [Discord channel](https://discord.com/channels/1091220969173028894/1094454198688546826).
+**Real-World Insights**. Be the first to take advantage of new models. See real-world data of [how often models are used](mdc:https:/openrouter.ai/rankings) for different purposes. Keep up to date in our [Discord channel](mdc:https:/discord.com/channels/1091220969173028894/1094454198688546826).
 
 **Consolidated Billing**. Simple and transparent billing, regardless of how many providers you use.
 
@@ -439,7 +439,7 @@ OpenRouter helps developers source and optimize AI usage. We believe the future 
 
 OpenRouter strives to provide access to every potentially useful text-based AI model. We currently support over 300 models endpoints.
 
-If there are models or providers you are interested in that OpenRouter doesn't have, please tell us about them in our [Discord channel](https://discord.gg/fVyRaUDgxW).
+If there are models or providers you are interested in that OpenRouter doesn't have, please tell us about them in our [Discord channel](mdc:https:/discord.gg/fVyRaUDgxW).
 
 <Note title="Different models tokenize text in different ways">
   Some models break up text into chunks of multiple characters (GPT, Claude,
@@ -449,11 +449,11 @@ If there are models or providers you are interested in that OpenRouter doesn't h
   tokenizer for the model in use.
 </Note>
 
-Explore and browse 300+ models and providers [on our website](https://openrouter.ai/models), or [with our API](/docs/api-reference/list-available-models).
+Explore and browse 300+ models and providers [on our website](mdc:https:/openrouter.ai/models), or [with our API](mdc:docs/api-reference/list-available-models).
 
 ## For Providers
 
-If you're interested in working with OpenRouter, you can learn more on our [providers page](/docs/use-cases/for-providers).
+If you're interested in working with OpenRouter, you can learn more on our [providers page](mdc:docs/use-cases/for-providers).
 
 
 # Model Routing
@@ -464,7 +464,7 @@ OpenRouter provides two options for model routing.
 
 ## Auto Router
 
-The [Auto Router](https://openrouter.ai/openrouter/auto), a special model ID that you can use to choose between selected high-quality models based on your prompt, powered by [NotDiamond](https://www.notdiamond.ai/).
+The [Auto Router](mdc:https:/openrouter.ai/openrouter/auto), a special model ID that you can use to choose between selected high-quality models based on your prompt, powered by [NotDiamond](mdc:https:/www.notdiamond.ai).
 
 ```json
 {
@@ -529,9 +529,9 @@ main();
 
 > Route AI model requests across multiple providers intelligently. Learn how to optimize for cost, performance, and reliability with OpenRouter's provider routing.
 
-OpenRouter routes requests to the best available providers for your model. By default, [requests are load balanced](#load-balancing-default-strategy) across the top providers to maximize uptime.
+OpenRouter routes requests to the best available providers for your model. By default, [requests are load balanced](mdc:#load-balancing-default-strategy) across the top providers to maximize uptime.
 
-You can customize how your requests are routed using the `provider` object in the request body for [Chat Completions](/docs/api-reference/chat-completion) and [Completions](/docs/api-reference/completion).
+You can customize how your requests are routed using the `provider` object in the request body for [Chat Completions](mdc:docs/api-reference/chat-completion) and [Completions](mdc:docs/api-reference/completion).
 
 <Tip>
   For a complete list of valid provider names to use in the API, see the [full
@@ -542,13 +542,13 @@ The `provider` object can contain the following fields:
 
 | Field                | Type              | Default | Description                                                                                                                       |
 | -------------------- | ----------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `order`              | string\[]         | -       | List of provider names to try in order (e.g. `["Anthropic", "OpenAI"]`). [Learn more](#ordering-specific-providers)               |
-| `allow_fallbacks`    | boolean           | `true`  | Whether to allow backup providers when the primary is unavailable. [Learn more](#disabling-fallbacks)                             |
-| `require_parameters` | boolean           | `false` | Only use providers that support all parameters in your request. [Learn more](#requiring-providers-to-support-all-parameters-beta) |
-| `data_collection`    | "allow" \| "deny" | "allow" | Control whether to use providers that may store data. [Learn more](#requiring-providers-to-comply-with-data-policies)             |
-| `ignore`             | string\[]         | -       | List of provider names to skip for this request. [Learn more](#ignoring-providers)                                                |
-| `quantizations`      | string\[]         | -       | List of quantization levels to filter by (e.g. `["int4", "int8"]`). [Learn more](#quantization)                                   |
-| `sort`               | string            | -       | Sort providers by price or throughput. (e.g. `"price"` or `"throughput"`). [Learn more](#provider-sorting)                        |
+| `order`              | string\[]         | -       | List of provider names to try in order (e.g. `["Anthropic", "OpenAI"]`). [Learn more](mdc:#ordering-specific-providers)               |
+| `allow_fallbacks`    | boolean           | `true`  | Whether to allow backup providers when the primary is unavailable. [Learn more](mdc:#disabling-fallbacks)                             |
+| `require_parameters` | boolean           | `false` | Only use providers that support all parameters in your request. [Learn more](mdc:#requiring-providers-to-support-all-parameters-beta) |
+| `data_collection`    | "allow" \| "deny" | "allow" | Control whether to use providers that may store data. [Learn more](mdc:#requiring-providers-to-comply-with-data-policies)             |
+| `ignore`             | string\[]         | -       | List of provider names to skip for this request. [Learn more](mdc:#ignoring-providers)                                                |
+| `quantizations`      | string\[]         | -       | List of quantization levels to filter by (e.g. `["int4", "int8"]`). [Learn more](mdc:#quantization)                                   |
+| `sort`               | string            | -       | Sort providers by price or throughput. (e.g. `"price"` or `"throughput"`). [Learn more](mdc:#provider-sorting)                        |
 
 ## Price-Based Load Balancing (Default Strategy)
 
@@ -641,9 +641,9 @@ You can set the providers that OpenRouter will prioritize for your request using
 | ------- | --------- | ------- | ------------------------------------------------------------------------ |
 | `order` | string\[] | -       | List of provider names to try in order (e.g. `["Anthropic", "OpenAI"]`). |
 
-The router will prioritize providers in this list, and in this order, for the model you're using. If you don't set this field, the router will [load balance](#load-balancing-default-strategy) across the top providers to maximize uptime.
+The router will prioritize providers in this list, and in this order, for the model you're using. If you don't set this field, the router will [load balance](mdc:#load-balancing-default-strategy) across the top providers to maximize uptime.
 
-OpenRouter will try them one at a time and proceed to other providers if none are operational. If you don't want to allow any other providers, you should [disable fallbacks](#disabling-fallbacks) as well.
+OpenRouter will try them one at a time and proceed to other providers if none are operational. If you don't want to allow any other providers, you should [disable fallbacks](mdc:#disabling-fallbacks) as well.
 
 ### Example: Specifying providers with fallbacks
 
@@ -686,7 +686,7 @@ You can restrict requests only to providers that support all parameters in your 
 | -------------------- | ------- | ------- | --------------------------------------------------------------- |
 | `require_parameters` | boolean | `false` | Only use providers that support all parameters in your request. |
 
-With the default routing strategy, providers that don't support all the [LLM parameters](/docs/api-reference/parameters) specified in your request can still receive the request, but will ignore unknown parameters. When you set `require_parameters` to `true`, the request won't even be routed to that provider.
+With the default routing strategy, providers that don't support all the [LLM parameters](mdc:docs/api-reference/parameters) specified in your request can still receive the request, but will ignore unknown parameters. When you set `require_parameters` to `true`, the request won't even be routed to that provider.
 
 ### Example: Excluding providers that don't support JSON formatting
 
@@ -740,7 +740,7 @@ To exclude providers that don't comply with your data policies, set `data_collec
 
 To guarantee that your request is only served by the top (lowest-cost) provider, you can disable fallbacks.
 
-This is combined with the `order` field from [Ordering Specific Providers](#ordering-specific-providers) to restrict the providers that OpenRouter will prioritize to just your chosen list.
+This is combined with the `order` field from [Ordering Specific Providers](mdc:#ordering-specific-providers) to restrict the providers that OpenRouter will prioritize to just your chosen list.
 
 <TSFetchCodeBlock
   uriPath="/api/v1/chat/completions"
@@ -766,7 +766,7 @@ You can ignore providers for a request by setting the `ignore` field in the `pro
 </Warning>
 
 <Tip title="Account-Wide Ignored Providers">
-  You can ignore providers for all account requests by configuring your [preferences](/settings/preferences). This configuration applies to all API requests and chatroom messages.
+  You can ignore providers for all account requests by configuring your [preferences](mdc:settings/preferences). This configuration applies to all API requests and chatroom messages.
 
   Note that when you ignore providers for a specific request, the list of ignored providers is merged with your account-wide ignored providers.
 </Tip>
@@ -792,7 +792,7 @@ Quantization reduces model size and computational requirements while aiming to p
 
 | Field           | Type      | Default | Description                                                                                     |
 | --------------- | --------- | ------- | ----------------------------------------------------------------------------------------------- |
-| `quantizations` | string\[] | -       | List of quantization levels to filter by (e.g. `["int4", "int8"]`). [Learn more](#quantization) |
+| `quantizations` | string\[] | -       | List of quantization levels to filter by (e.g. `["int4", "int8"]`). [Learn more](mdc:#quantization) |
 
 <Warning>
   Quantized models may exhibit degraded performance for certain prompts,
@@ -834,60 +834,60 @@ Here's an example that will only use providers that support FP8 quantization:
 
 You can view the terms of service for each provider below. You may not violate the terms of service or policies of third-party providers that power the models on OpenRouter.
 
-* `OpenAI`: [https://openai.com/policies/row-terms-of-use/](https://openai.com/policies/row-terms-of-use/)
-* `Anthropic`: [https://www.anthropic.com/legal/commercial-terms](https://www.anthropic.com/legal/commercial-terms)
-* `Google Vertex`: [https://cloud.google.com/terms/](https://cloud.google.com/terms/)
-* `Google AI Studio`: [https://cloud.google.com/terms/](https://cloud.google.com/terms/)
-* `Amazon Bedrock`: [https://aws.amazon.com/service-terms/](https://aws.amazon.com/service-terms/)
-* `Groq`: [https://groq.com/terms-of-use/](https://groq.com/terms-of-use/)
-* `SambaNova`: [https://sambanova.ai/terms-and-conditions](https://sambanova.ai/terms-and-conditions)
-* `Cohere`: [https://cohere.com/terms-of-use](https://cohere.com/terms-of-use)
-* `Mistral`: [https://mistral.ai/terms/#terms-of-use](https://mistral.ai/terms/#terms-of-use)
-* `Together`: [https://www.together.ai/terms-of-service](https://www.together.ai/terms-of-service)
-* `Together (lite)`: [https://www.together.ai/terms-of-service](https://www.together.ai/terms-of-service)
-* `Fireworks`: [https://fireworks.ai/terms-of-service](https://fireworks.ai/terms-of-service)
-* `DeepInfra`: [https://deepinfra.com/docs/data](https://deepinfra.com/docs/data)
-* `Lepton`: [https://www.lepton.ai/policies/tos](https://www.lepton.ai/policies/tos)
-* `NovitaAI`: [https://novita.ai/legal/terms-of-service](https://novita.ai/legal/terms-of-service)
-* `Avian.io`: [https://avian.io/privacy](https://avian.io/privacy)
-* `Lambda`: [https://lambdalabs.com/legal/privacy-policy](https://lambdalabs.com/legal/privacy-policy)
-* `Azure`: [https://www.microsoft.com/en-us/legal/terms-of-use?oneroute=true](https://www.microsoft.com/en-us/legal/terms-of-use?oneroute=true)
-* `Modal`: [https://modal.com/legal/terms](https://modal.com/legal/terms)
-* `AnyScale`: [https://www.anyscale.com/terms](https://www.anyscale.com/terms)
-* `Replicate`: [https://replicate.com/terms](https://replicate.com/terms)
-* `Perplexity`: [https://www.perplexity.ai/hub/legal/perplexity-api-terms-of-service](https://www.perplexity.ai/hub/legal/perplexity-api-terms-of-service)
-* `Recursal`: [https://featherless.ai/terms](https://featherless.ai/terms)
-* `OctoAI`: [https://octo.ai/docs/faqs/privacy-and-security](https://octo.ai/docs/faqs/privacy-and-security)
-* `DeepSeek`: [https://chat.deepseek.com/downloads/DeepSeek%20Terms%20of%20Use.html](https://chat.deepseek.com/downloads/DeepSeek%20Terms%20of%20Use.html)
-* `Infermatic`: [https://infermatic.ai/privacy-policy/](https://infermatic.ai/privacy-policy/)
-* `AI21`: [https://studio.ai21.com/privacy-policy](https://studio.ai21.com/privacy-policy)
-* `Featherless`: [https://featherless.ai/terms](https://featherless.ai/terms)
-* `Inflection`: [https://developers.inflection.ai/tos](https://developers.inflection.ai/tos)
-* `xAI`: [https://x.ai/legal/terms-of-service](https://x.ai/legal/terms-of-service)
-* `Cloudflare`: [https://www.cloudflare.com/service-specific-terms-developer-platform/#developer-platform-terms](https://www.cloudflare.com/service-specific-terms-developer-platform/#developer-platform-terms)
-* `SF Compute`: [https://inference.sfcompute.com/privacy](https://inference.sfcompute.com/privacy)
-* `Minimax`: [https://intl.minimaxi.com/protocol/terms-of-service](https://intl.minimaxi.com/protocol/terms-of-service)
-* `Nineteen`: [https://nineteen.ai/tos](https://nineteen.ai/tos)
-* `Liquid`: [https://www.liquid.ai/terms-conditions](https://www.liquid.ai/terms-conditions)
-* `NCompass`: [https://console.ncompass.tech/privacy](https://console.ncompass.tech/privacy)
-* `inference.net`: [https://inference.net/terms](https://inference.net/terms)
-* `Friendli`: [https://friendli.ai/terms-of-service](https://friendli.ai/terms-of-service)
-* `AionLabs`: [https://www.aionlabs.ai/terms/](https://www.aionlabs.ai/terms/)
-* `Alibaba`: [https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0](https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0)
-* `Nebius AI Studio`: [https://docs.nebius.com/legal/studio/terms-of-use/](https://docs.nebius.com/legal/studio/terms-of-use/)
-* `Chutes`: [https://chutes.ai/tos](https://chutes.ai/tos)
-* `kluster.ai`: [https://www.kluster.ai/terms-of-use](https://www.kluster.ai/terms-of-use)
-* `Crusoe`: [https://legal.crusoe.ai/open-router#managed-inference-tos-open-router](https://legal.crusoe.ai/open-router#managed-inference-tos-open-router)
-* `Targon`: [https://targon.com/terms](https://targon.com/terms)
-* `Ubicloud`: [https://www.ubicloud.com/docs/about/terms-of-service](https://www.ubicloud.com/docs/about/terms-of-service)
-* `Parasail`: [https://www.parasail.io/legal/terms](https://www.parasail.io/legal/terms)
-* `01.AI`: [https://platform.01.ai/privacypolicy](https://platform.01.ai/privacypolicy)
-* `HuggingFace`: [https://huggingface.co/terms-of-service](https://huggingface.co/terms-of-service)
-* `Mancer`: [https://mancer.tech/terms](https://mancer.tech/terms)
-* `Mancer (private)`: [https://mancer.tech/terms](https://mancer.tech/terms)
-* `Hyperbolic`: [https://hyperbolic.xyz/privacy](https://hyperbolic.xyz/privacy)
-* `Hyperbolic (quantized)`: [https://hyperbolic.xyz/privacy](https://hyperbolic.xyz/privacy)
-* `Lynn`: [https://api.lynn.app/policy](https://api.lynn.app/policy)
+* `OpenAI`: [https://openai.com/policies/row-terms-of-use/](mdc:https:/openai.com/policies/row-terms-of-use)
+* `Anthropic`: [https://www.anthropic.com/legal/commercial-terms](mdc:https:/www.anthropic.com/legal/commercial-terms)
+* `Google Vertex`: [https://cloud.google.com/terms/](mdc:https:/cloud.google.com/terms)
+* `Google AI Studio`: [https://cloud.google.com/terms/](mdc:https:/cloud.google.com/terms)
+* `Amazon Bedrock`: [https://aws.amazon.com/service-terms/](mdc:https:/aws.amazon.com/service-terms)
+* `Groq`: [https://groq.com/terms-of-use/](mdc:https:/groq.com/terms-of-use)
+* `SambaNova`: [https://sambanova.ai/terms-and-conditions](mdc:https:/sambanova.ai/terms-and-conditions)
+* `Cohere`: [https://cohere.com/terms-of-use](mdc:https:/cohere.com/terms-of-use)
+* `Mistral`: [https://mistral.ai/terms/#terms-of-use](mdc:https:/mistral.ai/terms/#terms-of-use)
+* `Together`: [https://www.together.ai/terms-of-service](mdc:https:/www.together.ai/terms-of-service)
+* `Together (lite)`: [https://www.together.ai/terms-of-service](mdc:https:/www.together.ai/terms-of-service)
+* `Fireworks`: [https://fireworks.ai/terms-of-service](mdc:https:/fireworks.ai/terms-of-service)
+* `DeepInfra`: [https://deepinfra.com/docs/data](mdc:https:/deepinfra.com/docs/data)
+* `Lepton`: [https://www.lepton.ai/policies/tos](mdc:https:/www.lepton.ai/policies/tos)
+* `NovitaAI`: [https://novita.ai/legal/terms-of-service](mdc:https:/novita.ai/legal/terms-of-service)
+* `Avian.io`: [https://avian.io/privacy](mdc:https:/avian.io/privacy)
+* `Lambda`: [https://lambdalabs.com/legal/privacy-policy](mdc:https:/lambdalabs.com/legal/privacy-policy)
+* `Azure`: [https://www.microsoft.com/en-us/legal/terms-of-use?oneroute=true](mdc:https:/www.microsoft.com/en-us/legal/terms-of-use?oneroute=true)
+* `Modal`: [https://modal.com/legal/terms](mdc:https:/modal.com/legal/terms)
+* `AnyScale`: [https://www.anyscale.com/terms](mdc:https:/www.anyscale.com/terms)
+* `Replicate`: [https://replicate.com/terms](mdc:https:/replicate.com/terms)
+* `Perplexity`: [https://www.perplexity.ai/hub/legal/perplexity-api-terms-of-service](mdc:https:/www.perplexity.ai/hub/legal/perplexity-api-terms-of-service)
+* `Recursal`: [https://featherless.ai/terms](mdc:https:/featherless.ai/terms)
+* `OctoAI`: [https://octo.ai/docs/faqs/privacy-and-security](mdc:https:/octo.ai/docs/faqs/privacy-and-security)
+* `DeepSeek`: [https://chat.deepseek.com/downloads/DeepSeek%20Terms%20of%20Use.html](mdc:https:/chat.deepseek.com/downloads/DeepSeek%20Terms%20of%20Use.html)
+* `Infermatic`: [https://infermatic.ai/privacy-policy/](mdc:https:/infermatic.ai/privacy-policy)
+* `AI21`: [https://studio.ai21.com/privacy-policy](mdc:https:/studio.ai21.com/privacy-policy)
+* `Featherless`: [https://featherless.ai/terms](mdc:https:/featherless.ai/terms)
+* `Inflection`: [https://developers.inflection.ai/tos](mdc:https:/developers.inflection.ai/tos)
+* `xAI`: [https://x.ai/legal/terms-of-service](mdc:https:/x.ai/legal/terms-of-service)
+* `Cloudflare`: [https://www.cloudflare.com/service-specific-terms-developer-platform/#developer-platform-terms](mdc:https:/www.cloudflare.com/service-specific-terms-developer-platform/#developer-platform-terms)
+* `SF Compute`: [https://inference.sfcompute.com/privacy](mdc:https:/inference.sfcompute.com/privacy)
+* `Minimax`: [https://intl.minimaxi.com/protocol/terms-of-service](mdc:https:/intl.minimaxi.com/protocol/terms-of-service)
+* `Nineteen`: [https://nineteen.ai/tos](mdc:https:/nineteen.ai/tos)
+* `Liquid`: [https://www.liquid.ai/terms-conditions](mdc:https:/www.liquid.ai/terms-conditions)
+* `NCompass`: [https://console.ncompass.tech/privacy](mdc:https:/console.ncompass.tech/privacy)
+* `inference.net`: [https://inference.net/terms](mdc:https:/inference.net/terms)
+* `Friendli`: [https://friendli.ai/terms-of-service](mdc:https:/friendli.ai/terms-of-service)
+* `AionLabs`: [https://www.aionlabs.ai/terms/](mdc:https:/www.aionlabs.ai/terms)
+* `Alibaba`: [https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0](mdc:https:/www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0)
+* `Nebius AI Studio`: [https://docs.nebius.com/legal/studio/terms-of-use/](mdc:https:/docs.nebius.com/legal/studio/terms-of-use)
+* `Chutes`: [https://chutes.ai/tos](mdc:https:/chutes.ai/tos)
+* `kluster.ai`: [https://www.kluster.ai/terms-of-use](mdc:https:/www.kluster.ai/terms-of-use)
+* `Crusoe`: [https://legal.crusoe.ai/open-router#managed-inference-tos-open-router](mdc:https:/legal.crusoe.ai/open-router#managed-inference-tos-open-router)
+* `Targon`: [https://targon.com/terms](mdc:https:/targon.com/terms)
+* `Ubicloud`: [https://www.ubicloud.com/docs/about/terms-of-service](mdc:https:/www.ubicloud.com/docs/about/terms-of-service)
+* `Parasail`: [https://www.parasail.io/legal/terms](mdc:https:/www.parasail.io/legal/terms)
+* `01.AI`: [https://platform.01.ai/privacypolicy](mdc:https:/platform.01.ai/privacypolicy)
+* `HuggingFace`: [https://huggingface.co/terms-of-service](mdc:https:/huggingface.co/terms-of-service)
+* `Mancer`: [https://mancer.tech/terms](mdc:https:/mancer.tech/terms)
+* `Mancer (private)`: [https://mancer.tech/terms](mdc:https:/mancer.tech/terms)
+* `Hyperbolic`: [https://hyperbolic.xyz/privacy](mdc:https:/hyperbolic.xyz/privacy)
+* `Hyperbolic (quantized)`: [https://hyperbolic.xyz/privacy](mdc:https:/hyperbolic.xyz/privacy)
+* `Lynn`: [https://api.lynn.app/policy](mdc:https:/api.lynn.app/policy)
 
 ## JSON Schema for Provider Preferences
 
@@ -906,7 +906,7 @@ Most providers automatically enable prompt caching, but note that some (see Anth
 
 ## Inspecting cache usage
 
-To see how much caching saved on each generation, you click the detail button on the [Activity](/activity) page, or you can use the `/api/v1/generation` API, [documented here](/api-reference/overview#querying-cost-and-stats).
+To see how much caching saved on each generation, you click the detail button on the [Activity](mdc:activity) page, or you can use the `/api/v1/generation` API, [documented here](mdc:api-reference/overview#querying-cost-and-stats).
 
 The `cache_discount` field in the response body will tell you how much the response saved on cache usage. Some providers, like Anthropic, will have a negative discount on cache writes, but a positive discount (which reduces total cost) on cache reads.
 
@@ -919,7 +919,7 @@ Caching price changes:
 
 Prompt caching with OpenAI is automated and does not require any additional configuration. There is a minimum prompt size of 1024 tokens.
 
-[Click here to read more about OpenAI prompt caching and its limitation.](https://openai.com/index/api-prompt-caching/)
+[Click here to read more about OpenAI prompt caching and its limitation.](mdc:https:/openai.com/index/api-prompt-caching)
 
 ## Anthropic Claude
 
@@ -930,7 +930,7 @@ Caching price changes:
 
 Prompt caching with Anthropic requires the use of `cache_control` breakpoints. There is a limit of four breakpoints, and the cache will expire within five minutes. Therefore, it is recommended to reserve the cache breakpoints for large bodies of text, such as character cards, CSV data, RAG data, book chapters, etc.
 
-[Click here to read more about Anthropic prompt caching and its limitation.](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching)
+[Click here to read more about Anthropic prompt caching and its limitation.](mdc:https:/docs.anthropic.com/en/docs/build-with-claude/prompt-caching)
 
 The `cache_control` breakpoint can only be inserted into the text part of a multipart message.
 
@@ -1074,15 +1074,15 @@ The model will respond with a JSON object that strictly follows your schema:
 
 Structured outputs are supported by select models.
 
-You can find a list of models that support structured outputs on the [models page](https://openrouter.ai/models?order=newest\&supported_parameters=structured_outputs).
+You can find a list of models that support structured outputs on the [models page](mdc:https:/openrouter.ai/models?order=newest\&supported_parameters=structured_outputs).
 
-* OpenAI models (GPT-4o and later versions) [Docs](https://platform.openai.com/docs/guides/structured-outputs)
-* All Fireworks provided models [Docs](https://docs.fireworks.ai/structured-responses/structured-response-formatting#structured-response-modes)
+* OpenAI models (GPT-4o and later versions) [Docs](mdc:https:/platform.openai.com/docs/guides/structured-outputs)
+* All Fireworks provided models [Docs](mdc:https:/docs.fireworks.ai/structured-responses/structured-response-formatting#structured-response-modes)
 
 To ensure your chosen model supports structured outputs:
 
-1. Check the model's supported parameters on the [models page](https://openrouter.ai/models)
-2. Set `require_parameters: true` in your provider preferences (see [Provider Routing](/docs/features/provider-routing))
+1. Check the model's supported parameters on the [models page](mdc:https:/openrouter.ai/models)
+2. Set `require_parameters: true` in your provider preferences (see [Provider Routing](mdc:docs/features/provider-routing))
 3. Include `response_format` and set `type: json_schema` in the required parameters
 
 ## Best Practices
@@ -1230,7 +1230,7 @@ Tool calls (also known as function calls) give an LLM access to external tools. 
 
 OpenRouter standardizes the tool calling interface across models and providers.
 
-For a primer on how tool calling works in the OpenAI SDK, please see [this article](https://platform.openai.com/docs/guides/function-calling?api-mode=chat), or if you prefer to learn from a full end-to-end example, keep reading.
+For a primer on how tool calling works in the OpenAI SDK, please see [this article](mdc:https:/platform.openai.com/docs/guides/function-calling?api-mode=chat), or if you prefer to learn from a full end-to-end example, keep reading.
 
 ### Tool Calling Example
 
@@ -1461,7 +1461,7 @@ The LLM responds with a finish reason of tool\_calls, and a tool\_calls array. I
         '''
         tool_name = tool_call.function.name
         tool_args = json.loads(tool_call.function.arguments)
-        tool_response = TOOL_MAPPING[tool_name](**tool_args)
+        tool_response = TOOL_MAPPING[tool_name](mdc:**tool_args)
         messages.append({
           "role": "tool",
           "tool_call_id": tool_call.id,
@@ -1479,7 +1479,7 @@ The LLM responds with a finish reason of tool\_calls, and a tool\_calls array. I
     for (const toolCall of response.toolCalls) {
       const toolName = toolCall.function.name;
       const toolArgs = JSON.parse(toolCall.function.arguments);
-      const toolResponse = await TOOL_MAPPING[toolName](toolArgs);
+      const toolResponse = await TOOL_MAPPING[toolName](mdc:toolArgs);
       messages.push({
         role: 'tool',
         toolCallId: toolCall.id,
@@ -1583,7 +1583,7 @@ Here's an example of a simple agentic loop (using the same `tools` and initial `
 
         # Look up the correct tool locally, and call it with the provided arguments
         # Other tools can be added without changing the agentic loop
-        tool_result = TOOL_MAPPING[tool_name](**tool_args)
+        tool_result = TOOL_MAPPING[tool_name](mdc:**tool_args)
 
         return {
             "role": "tool",
@@ -1634,7 +1634,7 @@ Here's an example of a simple agentic loop (using the same `tools` and initial `
 
       // Look up the correct tool locally, and call it with the provided arguments
       // Other tools can be added without changing the agentic loop
-      const toolResult = await TOOL_MAPPING[toolName](toolArgs);
+      const toolResult = await TOOL_MAPPING[toolName](mdc:toolArgs);
 
       return {
         role: 'tool',
@@ -1683,11 +1683,11 @@ When middle-out compression is enabled, OpenRouter will first try to find models
 The compression will then attempt to fit your content within the chosen model's context window by removing or truncating content from the middle of the prompt. If middle-out compression is disabled and your total tokens exceed the model's context length, the request will fail with an error message suggesting you either reduce the length or enable middle-out compression.
 
 <Note>
-  [All OpenRouter endpoints](/models) with 8k (8,192 tokens) or less context
+  [All OpenRouter endpoints](mdc:models) with 8k (8,192 tokens) or less context
   length will default to using `middle-out`. To disable this, set `transforms:   []` in the request body.
 </Note>
 
-The middle of the prompt is compressed because [LLMs pay less attention](https://arxiv.org/abs/2307.03172) to the middle of sequences.
+The middle of the prompt is compressed because [LLMs pay less attention](mdc:https:/arxiv.org/abs/2307.03172) to the middle of sequences.
 
 
 # Uptime Optimization
@@ -1712,7 +1712,7 @@ OpenRouter tracks response times, error rates, and availability across all provi
 
 While our smart routing helps maintain high availability, you can also customize provider selection using request parameters. This gives you control over which providers handle your requests while still benefiting from automatic fallback when needed.
 
-Learn more about customizing provider selection in our [Provider Routing documentation](/docs/features/provider-routing).
+Learn more about customizing provider selection in our [Provider Routing documentation](mdc:docs/features/provider-routing).
 
 
 # Web Search
@@ -1736,7 +1736,7 @@ This is a shortcut for using the `web` plugin, and is exactly equivalent to:
 }
 ```
 
-The web search plugin is powered by [Exa](https://exa.ai) and uses their ["auto"](https://docs.exa.ai/reference/how-exa-search-works#combining-neural-and-keyword-the-best-of-both-worlds-through-exa-auto-search) method (a combination of keyword search and embeddings-based web search) to find the most relevant results and augment/ground your prompt.
+The web search plugin is powered by [Exa](mdc:https:/exa.ai) and uses their ["auto"](mdc:https:/docs.exa.ai/reference/how-exa-search-works#combining-neural-and-keyword-the-best-of-both-worlds-through-exa-auto-search) method (a combination of keyword search and embeddings-based web search) to find the most relevant results and augment/ground your prompt.
 
 ## Customizing the Web Plugin
 
@@ -1761,7 +1761,7 @@ By default, the web plugin uses the following search prompt, using the current d
 A web search was conducted on `date`. Incorporate the following web search results into your response.
 
 IMPORTANT: Cite them using markdown links named using the domain of the source.
-Example: [nytimes.com](https://nytimes.com/some-page).
+Example: [nytimes.com](mdc:https:/nytimes.com/some-page).
 ```
 
 ## Pricing
@@ -1779,7 +1779,7 @@ OpenRouter provides endpoints to programmatically manage your API keys, enabling
 
 To use the key management API, you first need to create a Provisioning API key:
 
-1. Go to the [Provisioning API Keys page](https://openrouter.ai/settings/provisioning-keys)
+1. Go to the [Provisioning API Keys page](mdc:https:/openrouter.ai/settings/provisioning-keys)
 2. Click "Create New Key"
 3. Complete the key creation process
 
@@ -1961,9 +1961,9 @@ OpenRouter's request and response schemas are very similar to the OpenAI Chat AP
 
 ### Completions Request Format
 
-Here is the request schema as a TypeScript type. This will be the body of your `POST` request to the `/api/v1/chat/completions` endpoint (see the [quick start](/docs/quick-start) above for an example).
+Here is the request schema as a TypeScript type. This will be the body of your `POST` request to the `/api/v1/chat/completions` endpoint (see the [quick start](mdc:docs/quick-start) above for an example).
 
-For a complete list of parameters, see the [Parameters](/docs/api-reference/parameters).
+For a complete list of parameters, see the [Parameters](mdc:docs/api-reference/parameters).
 
 <CodeGroup>
   ```typescript title="Request Schema"
@@ -2077,7 +2077,7 @@ For a complete list of parameters, see the [Parameters](/docs/api-reference/para
   ```
 </CodeGroup>
 
-The `response_format` parameter ensures you receive a structured response from the LLM. The parameter is only supported by OpenAI models, Nitro models, and some others - check the providers on the model page on openrouter.ai/models to see if it's supported, and set `require_parameters` to true in your Provider Preferences. See [Provider Routing](/docs/features/provider-routing)
+The `response_format` parameter ensures you receive a structured response from the LLM. The parameter is only supported by OpenAI models, Nitro models, and some others - check the providers on the model page on openrouter.ai/models to see if it's supported, and set `require_parameters` to true in your Provider Preferences. See [Provider Routing](mdc:docs/features/provider-routing)
 
 ### Headers
 
@@ -2112,7 +2112,7 @@ OpenRouter allows you to specify some optional headers to identify your app and 
 <Info title="Model routing">
   If the `model` parameter is omitted, the user or payer's default is used.
   Otherwise, remember to select a value for `model` from the [supported
-  models](/models) or [API](/api/v1/models), and include the organization
+  models](/models) or [API](mdc:api/v1/models), and include the organization
   prefix. OpenRouter will select the least expensive and best GPUs available to
   serve the request, and fall back to other providers or GPUs if it receives a
   5xx response code or if you are rate-limited.
@@ -2247,7 +2247,7 @@ Supported content types are:
 
 ### CompletionsResponse Format
 
-OpenRouter normalizes the schema across models and providers to comply with the [OpenAI Chat API](https://platform.openai.com/docs/api-reference/chat).
+OpenRouter normalizes the schema across models and providers to comply with the [OpenAI Chat API](mdc:https:/platform.openai.com/docs/api-reference/chat).
 
 This means that `choices` is always an array, even if the model only returns one completion. Each choice will contain a `delta` property if a stream was requested and a `message` property otherwise. This makes it easier to use the same code for all models.
 
@@ -2536,13 +2536,13 @@ For SSE (Server-Sent Events) streams, OpenRouter occasionally sends comments to 
 : OPENROUTER PROCESSING
 ```
 
-Comment payload can be safely ignored per the [SSE specs](https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation). However, you can leverage it to improve UX as needed, e.g. by showing a dynamic loading indicator.
+Comment payload can be safely ignored per the [SSE specs](mdc:https:/html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation). However, you can leverage it to improve UX as needed, e.g. by showing a dynamic loading indicator.
 
 Some SSE client implementations might not parse the payload according to spec, which leads to an uncaught error when you `JSON.stringify` the non-JSON payloads. We recommend the following clients:
 
-* [eventsource-parser](https://github.com/rexxars/eventsource-parser)
-* [OpenAI SDK](https://www.npmjs.com/package/openai)
-* [Vercel AI SDK](https://www.npmjs.com/package/ai)
+* [eventsource-parser](mdc:https:/github.com/rexxars/eventsource-parser)
+* [OpenAI SDK](mdc:https:/www.npmjs.com/package/openai)
+* [Vercel AI SDK](mdc:https:/www.npmjs.com/package/ai)
 
 ### Stream Cancellation
 
@@ -2662,17 +2662,17 @@ To implement stream cancellation:
 
 You can cover model costs with OpenRouter API keys.
 
-Our API authenticates requests using Bearer tokens. This allows you to use `curl` or the [OpenAI SDK](https://platform.openai.com/docs/frameworks) directly with OpenRouter.
+Our API authenticates requests using Bearer tokens. This allows you to use `curl` or the [OpenAI SDK](mdc:https:/platform.openai.com/docs/frameworks) directly with OpenRouter.
 
 <Warning>
   API keys on OpenRouter are more powerful than keys used directly for model APIs.
 
-  They allow users to set credit limits for apps, and they can be used in [OAuth](/docs/use-cases/oauth-pkce) flows.
+  They allow users to set credit limits for apps, and they can be used in [OAuth](mdc:docs/use-cases/oauth-pkce) flows.
 </Warning>
 
 ## Using an API key
 
-To use an API key, [first create your key](https://openrouter.ai/keys). Give it a name and you can optionally set a credit limit.
+To use an API key, [first create your key](mdc:https:/openrouter.ai/keys). Give it a name and you can optionally set a credit limit.
 
 If you're calling the OpenRouter API directly, set the `Authorization` header to a Bearer token with your API key.
 
@@ -2756,7 +2756,7 @@ If you're using the OpenAI Typescript SDK, set the `api_base` to `https://openro
   ```
 </CodeGroup>
 
-To stream with Python, [see this example from OpenAI](https://github.com/openai/openai-cookbook/blob/main/examples/How_to_stream_completions.ipynb).
+To stream with Python, [see this example from OpenAI](mdc:https:/github.com/openai/openai-cookbook/blob/main/examples/How_to_stream_completions.ipynb).
 
 ## If your key has been exposed
 
@@ -2766,7 +2766,7 @@ To stream with Python, [see this example from OpenAI](https://github.com/openai/
 
 OpenRouter is a GitHub secret scanning partner, and has other methods to detect exposed keys. If we determine that your key has been compromised, you will receive an email notification.
 
-If you receive such a notification or suspect your key has been exposed, immediately visit [your key settings page](https://openrouter.ai/settings/keys) to delete the compromised key and create a new one.
+If you receive such a notification or suspect your key has been exposed, immediately visit [your key settings page](mdc:https:/openrouter.ai/settings/keys) to delete the compromised key and create a new one.
 
 Using environment variables and keeping keys out of your codebase is strongly recommended.
 
@@ -2779,7 +2779,7 @@ Sampling parameters shape the token generation process of the model. You may sen
 
 OpenRouter will default to the values listed below if certain parameters are absent from your request (for example, `temperature` to 1.0). We will also transmit some provider-specific parameters, such as `safe_prompt` for Mistral or `raw_mode` for Hyperbolic directly to the respective providers if specified.
 
-Please refer to the model’s provider section to confirm which parameters are supported. For detailed guidance on managing provider-specific parameters, [click here](/docs/features/provider-routing#requiring-providers-to-support-all-parameters-beta).
+Please refer to the model’s provider section to confirm which parameters are supported. For detailed guidance on managing provider-specific parameters, [click here](mdc:docs/features/provider-routing#requiring-providers-to-support-all-parameters-beta).
 
 ## Temperature
 
@@ -2789,7 +2789,7 @@ Please refer to the model’s provider section to confirm which parameters are s
 
 * Default: 1.0
 
-* Explainer Video: [Watch](https://youtu.be/ezgqHnWvua8)
+* Explainer Video: [Watch](mdc:https:/youtu.be/ezgqHnWvua8)
 
 This setting influences the variety in the model's responses. Lower values lead to more predictable and typical responses, while higher values encourage more diverse and less common responses. At 0, the model always gives the same response for a given input.
 
@@ -2801,7 +2801,7 @@ This setting influences the variety in the model's responses. Lower values lead 
 
 * Default: 1.0
 
-* Explainer Video: [Watch](https://youtu.be/wQP-im_HInk)
+* Explainer Video: [Watch](mdc:https:/youtu.be/wQP-im_HInk)
 
 This setting limits the model's choices to a percentage of likely tokens: only the top tokens whose probabilities add up to P. A lower value makes the model's responses more predictable, while the default setting allows for a full range of token choices. Think of it like a dynamic Top-K.
 
@@ -2813,7 +2813,7 @@ This setting limits the model's choices to a percentage of likely tokens: only t
 
 * Default: 0
 
-* Explainer Video: [Watch](https://youtu.be/EbZv6-N8Xlk)
+* Explainer Video: [Watch](mdc:https:/youtu.be/EbZv6-N8Xlk)
 
 This limits the model's choice of tokens at each step, making it choose from a smaller set. A value of 1 means the model will always pick the most likely next token, leading to predictable results. By default this setting is disabled, making the model to consider all choices.
 
@@ -2825,7 +2825,7 @@ This limits the model's choice of tokens at each step, making it choose from a s
 
 * Default: 0.0
 
-* Explainer Video: [Watch](https://youtu.be/p4gl6fqI0_w)
+* Explainer Video: [Watch](mdc:https:/youtu.be/p4gl6fqI0_w)
 
 This setting aims to control the repetition of tokens based on how often they appear in the input. It tries to use less frequently those tokens that appear more in the input, proportional to how frequently they occur. Token penalty scales with the number of occurrences. Negative values will encourage token reuse.
 
@@ -2837,7 +2837,7 @@ This setting aims to control the repetition of tokens based on how often they ap
 
 * Default: 0.0
 
-* Explainer Video: [Watch](https://youtu.be/MwHG5HL-P74)
+* Explainer Video: [Watch](mdc:https:/youtu.be/MwHG5HL-P74)
 
 Adjusts how often the model repeats specific tokens already used in the input. Higher values make such repetition less likely, while negative values do the opposite. Token penalty does not scale with the number of occurrences. Negative values will encourage token reuse.
 
@@ -2849,7 +2849,7 @@ Adjusts how often the model repeats specific tokens already used in the input. H
 
 * Default: 1.0
 
-* Explainer Video: [Watch](https://youtu.be/LHjGAnLm3DM)
+* Explainer Video: [Watch](mdc:https:/youtu.be/LHjGAnLm3DM)
 
 Helps to reduce the repetition of tokens from the input. A higher value makes the model less likely to repeat tokens, but too high a value can make the output less coherent (often with run-on sentences that lack small words). Token penalty scales based on original token's probability.
 
@@ -2946,7 +2946,7 @@ Stop generation immediately if the model encounter any token specified in the st
 
 * Optional, **array**
 
-Tool calling parameter, following OpenAI's tool calling request shape. For non-OpenAI providers, it will be transformed accordingly. [Click here to learn more about tool calling](/docs/requests#tool-calls)
+Tool calling parameter, following OpenAI's tool calling request shape. For non-OpenAI providers, it will be transformed accordingly. [Click here to learn more about tool calling](mdc:docs/requests#tool-calls)
 
 ## Tool Choice
 
@@ -3534,7 +3534,7 @@ Using provider keys enables direct control over rate limits and costs via your p
 
 Your provider keys are securely encrypted and used for all requests routed through the specified provider.
 
-Manage keys in your [account settings](/settings/integrations).
+Manage keys in your [account settings](mdc:settings/integrations).
 
 The cost of using custom provider keys on OpenRouter is **5% of what the same model/provider would cost normally on OpenRouter** and will be deducted from your OpenRouter credits.
 
@@ -3561,7 +3561,7 @@ To use Azure AI Services with OpenRouter, you'll need to provide your Azure API 
 
 You can find these values in your Azure AI Services resource:
 
-1. **endpoint\_url**: Navigate to your Azure AI Services resource in the Azure portal. In the "Overview" section, you'll find your endpoint URL. Make sure to append `/chat/completions` to the base URL. You can read more in the [Azure Foundry documentation](https://learn.microsoft.com/en-us/azure/ai-foundry/model-inference/concepts/endpoints?tabs=python).
+1. **endpoint\_url**: Navigate to your Azure AI Services resource in the Azure portal. In the "Overview" section, you'll find your endpoint URL. Make sure to append `/chat/completions` to the base URL. You can read more in the [Azure Foundry documentation](mdc:https:/learn.microsoft.com/en-us/azure/ai-foundry/model-inference/concepts/endpoints?tabs=python).
 
 2. **api\_key**: In the same "Overview" section of your Azure AI Services resource, you can find your API key under "Keys and Endpoint".
 
@@ -3635,14 +3635,14 @@ Example IAM policy:
 
 For enhanced security, we recommend creating dedicated IAM users with limited permissions specifically for use with OpenRouter.
 
-Learn more in the [AWS Bedrock Getting Started with the API](https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started-api.html) documentation, [IAM Permissions Setup](https://docs.aws.amazon.com/bedrock/latest/userguide/security-iam.html) guide, or the [AWS Bedrock API Reference](https://docs.aws.amazon.com/bedrock/latest/APIReference/welcome.html).
+Learn more in the [AWS Bedrock Getting Started with the API](mdc:https:/docs.aws.amazon.com/bedrock/latest/userguide/getting-started-api.html) documentation, [IAM Permissions Setup](mdc:https:/docs.aws.amazon.com/bedrock/latest/userguide/security-iam.html) guide, or the [AWS Bedrock API Reference](mdc:https:/docs.aws.amazon.com/bedrock/latest/APIReference/welcome.html).
 
 
 # Crypto API
 
 > Learn how to purchase OpenRouter credits using cryptocurrency. Complete guide to Coinbase integration, supported chains, and automated credit purchases.
 
-You can purchase credits using cryptocurrency through our Coinbase integration. This can either happen through the UI, on your [credits page](https://openrouter.ai/settings/credits), or through our API as described below. While other forms of payment are possible, this guide specifically shows how to pay with the chain's native token.
+You can purchase credits using cryptocurrency through our Coinbase integration. This can either happen through the UI, on your [credits page](mdc:https:/openrouter.ai/settings/credits), or through our API as described below. While other forms of payment are possible, this guide specifically shows how to pay with the chain's native token.
 
 Headless credit purchases involve three steps:
 
@@ -3711,9 +3711,9 @@ The response includes the charge details and transaction data needed to execute 
 
 ## Sending the Transaction
 
-You can use [viem](https://viem.sh) (or another similar evm client) to execute the transaction on-chain.
+You can use [viem](mdc:https:/viem.sh) (or another similar evm client) to execute the transaction on-chain.
 
-In this example, we'll be fulfilling the charge using the [swapAndTransferUniswapV3Native()](https://github.com/coinbase/commerce-onchain-payment-protocol/blob/d891289bd1f41bb95f749af537f2b6a36b17f889/contracts/interfaces/ITransfers.sol#L168-L171) function. Other methods of swapping are also available, and you can learn more by checking out Coinbase's [onchain payment protocol here](https://github.com/coinbase/commerce-onchain-payment-protocol/tree/master). Note, if you are trying to pay in a less common ERC-20, there is added complexity in needing to make sure that there is sufficient liquidity in the pool to swap the tokens.
+In this example, we'll be fulfilling the charge using the [swapAndTransferUniswapV3Native()](mdc:https:/github.com/coinbase/commerce-onchain-payment-protocol/blob/d891289bd1f41bb95f749af537f2b6a36b17f889/contracts/interfaces/ITransfers.sol#L168-L171) function. Other methods of swapping are also available, and you can learn more by checking out Coinbase's [onchain payment protocol here](mdc:https:/github.com/coinbase/commerce-onchain-payment-protocol/tree/master). Note, if you are trying to pay in a less common ERC-20, there is added complexity in needing to make sure that there is sufficient liquidity in the pool to swap the tokens.
 
 ```typescript
 import { createPublicClient, createWalletClient, http, parseEther } from 'viem';
@@ -4635,7 +4635,7 @@ Note that these values are cached, and may be up to 60 seconds stale.
 
 > Implement secure user authentication with OpenRouter using OAuth PKCE. Complete guide to setting up and managing OAuth authentication flows.
 
-Users can connect to OpenRouter in one click using [Proof Key for Code Exchange (PKCE)](https://oauth.net/2/pkce/).
+Users can connect to OpenRouter in one click using [Proof Key for Code Exchange (PKCE)](mdc:https:/oauth.net/2/pkce).
 
 Here's a step-by-step guide:
 
@@ -4663,12 +4663,12 @@ The `code_challenge` parameter is optional but recommended.
 
 Your user will be prompted to log in to OpenRouter and authorize your app. After authorization, they will be redirected back to your site with a `code` parameter in the URL:
 
-![Alt text](file:2bddb0a9-1751-4e07-b104-621f2f046891)
+![Alt text](mdc:file:2bddb0a9-1751-4e07-b104-621f2f046891)
 
 <Tip title="Use SHA-256 for Maximum Security">
   For maximum security, set `code_challenge_method` to `S256`, and set `code_challenge` to the base64 encoding of the sha256 hash of `code_verifier`.
 
-  For more info, [visit Auth0's docs](https://auth0.com/docs/get-started/authentication-and-authorization-flow/call-your-api-using-the-authorization-code-flow-with-pkce#parameters).
+  For more info, [visit Auth0's docs](mdc:https:/auth0.com/docs/get-started/authentication-and-authorization-flow/call-your-api-using-the-authorization-code-flow-with-pkce#parameters).
 </Tip>
 
 #### How to Generate a Code Challenge
@@ -4701,7 +4701,7 @@ When moving to production, replace the localhost/private referrer URL with a pub
 
 After the user logs in with OpenRouter, they are redirected back to your site with a `code` parameter in the URL:
 
-![Alt text](file:725750b1-baf7-4b2f-a857-082dc905b188)
+![Alt text](mdc:file:725750b1-baf7-4b2f-a857-082dc905b188)
 
 Extract this code using the browser API:
 
@@ -4736,7 +4736,7 @@ And that's it for the PKCE flow!
 
 ### Step 3: Use the API key
 
-Store the API key securely within the user's browser or in your own database, and use it to [make OpenRouter requests](/api-reference/completion).
+Store the API key securely within the user's browser or in your own database, and use it to [make OpenRouter requests](mdc:api-reference/completion).
 
 <CodeGroup>
   ```typescript title="Make an OpenRouter request"
@@ -4767,8 +4767,8 @@ Store the API key securely within the user's browser or in your own database, an
 
 ## External Tools
 
-* [PKCE Tools](https://example-app.com/pkce)
-* [Online PKCE Generator](https://tonyxu-io.github.io/pkce-generator/)
+* [PKCE Tools](mdc:https:/example-app.com/pkce)
+* [Online PKCE Generator](mdc:https:/tonyxu-io.github.io/pkce-generator)
 
 
 # Using MCP Servers with OpenRouter
@@ -4779,7 +4779,7 @@ MCP servers are a popular way of providing LLMs with tool calling abilities, and
 
 By converting MCP (Anthropic) tool definitions to OpenAI-compatible tool definitions, you can use MCP servers with OpenRouter.
 
-In this example, we'll use [Anthropic's MCP client SDK](https://github.com/modelcontextprotocol/mcp-client-python) to interact with the File System MCP, all with OpenRouter under the hood.
+In this example, we'll use [Anthropic's MCP client SDK](mdc:https:/github.com/modelcontextprotocol/mcp-client-python) to interact with the File System MCP, all with OpenRouter under the hood.
 
 <Alert>
   Note that interacting with MCP servers is more complex than calling a REST endpoint. The MCP protocol is stateful and requires session management. The example below uses the MCP client SDK, but is still somewhat complex.
@@ -4984,7 +4984,7 @@ The search found the following main Microsoft Office applications:
 
 ## For Providers
 
-If you'd like to be a model provider and sell inference on OpenRouter, [fill out our form](https://openrouter.notion.site/15a2fd57c4dc8067bc61ecd5263b31fd) to get started.
+If you'd like to be a model provider and sell inference on OpenRouter, [fill out our form](mdc:https:/openrouter.notion.site/15a2fd57c4dc8067bc61ecd5263b31fd) to get started.
 
 To be eligible to provide inference on OpenRouter you must have the following:
 
@@ -5390,7 +5390,7 @@ This example shows how to use reasoning tokens in a more complex workflow. It in
 
 ### Anthropic Models with Reasoning Tokens
 
-The latest Claude models, such as [anthropic/claude-3.7-sonnet](https://openrouter.ai/anthropic/claude-3.7-sonnet), support working with and returning reasoning tokens.
+The latest Claude models, such as [anthropic/claude-3.7-sonnet](mdc:https:/openrouter.ai/anthropic/claude-3.7-sonnet), support working with and returning reasoning tokens.
 
 You can enable reasoning on Anthropic models in two ways:
 
@@ -5498,15 +5498,15 @@ effort\_ratio is 0.8 for high effort, 0.5 for medium effort, and 0.2 for low eff
 
 > Integrate OpenRouter using popular frameworks and SDKs. Complete guides for OpenAI SDK, LangChain, PydanticAI, and Vercel AI SDK integration.
 
-You can find a few examples of using OpenRouter with other frameworks in [this Github repository](https://github.com/OpenRouterTeam/openrouter-examples). Here are some examples:
+You can find a few examples of using OpenRouter with other frameworks in [this Github repository](mdc:https:/github.com/OpenRouterTeam/openrouter-examples). Here are some examples:
 
 ## Using the OpenAI SDK
 
-* Using `pip install openai`: [github](https://github.com/OpenRouterTeam/openrouter-examples-python/blob/main/src/openai_test.py).
-* Using `npm i openai`: [github](https://github.com/OpenRouterTeam/openrouter-examples/blob/main/examples/openai/index.ts).
+* Using `pip install openai`: [github](mdc:https:/github.com/OpenRouterTeam/openrouter-examples-python/blob/main/src/openai_test.py).
+* Using `npm i openai`: [github](mdc:https:/github.com/OpenRouterTeam/openrouter-examples/blob/main/examples/openai/index.ts).
   <Tip>
     You can also use
-    [Grit](https://app.grit.io/studio?key=RKC0n7ikOiTGTNVkI8uRS) to
+    [Grit](mdc:https:/app.grit.io/studio?key=RKC0n7ikOiTGTNVkI8uRS) to
     automatically migrate your code. Simply run `npx @getgrit/launcher
       openrouter`.
   </Tip>
@@ -5572,9 +5572,9 @@ You can find a few examples of using OpenRouter with other frameworks in [this G
 
 ## Using LangChain
 
-* Using [LangChain for Python](https://github.com/langchain-ai/langchain): [github](https://github.com/alexanderatallah/openrouter-streamlit/blob/main/pages/2_Langchain_Quickstart.py)
-* Using [LangChain.js](https://github.com/langchain-ai/langchainjs): [github](https://github.com/OpenRouterTeam/openrouter-examples/blob/main/examples/langchain/index.ts)
-* Using [Streamlit](https://streamlit.io/): [github](https://github.com/alexanderatallah/openrouter-streamlit)
+* Using [LangChain for Python](mdc:https:/github.com/langchain-ai/langchain): [github](mdc:https:/github.com/alexanderatallah/openrouter-streamlit/blob/main/pages/2_Langchain_Quickstart.py)
+* Using [LangChain.js](mdc:https:/github.com/langchain-ai/langchainjs): [github](mdc:https:/github.com/OpenRouterTeam/openrouter-examples/blob/main/examples/langchain/index.ts)
+* Using [Streamlit](mdc:https:/streamlit.io): [github](mdc:https:/github.com/alexanderatallah/openrouter-streamlit)
 
 <CodeGroup>
   ```typescript title="TypeScript"
@@ -5635,7 +5635,7 @@ You can find a few examples of using OpenRouter with other frameworks in [this G
 
 ## Using PydanticAI
 
-[PydanticAI](https://github.com/pydantic/pydantic-ai) provides a high-level interface for working with various LLM providers, including OpenRouter.
+[PydanticAI](mdc:https:/github.com/pydantic/pydantic-ai) provides a high-level interface for working with various LLM providers, including OpenRouter.
 
 ### Installation
 
@@ -5662,19 +5662,19 @@ result = await agent.run("What is the meaning of life?")
 print(result)
 ```
 
-For more details about using PydanticAI with OpenRouter, see the [PydanticAI documentation](https://ai.pydantic.dev/models/#api_key-argument).
+For more details about using PydanticAI with OpenRouter, see the [PydanticAI documentation](mdc:https:/ai.pydantic.dev/models/#api_key-argument).
 
 ***
 
 ## Vercel AI SDK
 
-You can use the [Vercel AI SDK](https://www.npmjs.com/package/ai) to integrate OpenRouter with your Next.js app. To get started, install [@openrouter/ai-sdk-provider](https://github.com/OpenRouterTeam/ai-sdk-provider):
+You can use the [Vercel AI SDK](mdc:https:/www.npmjs.com/package/ai) to integrate OpenRouter with your Next.js app. To get started, install [@openrouter/ai-sdk-provider](mdc:https:/github.com/OpenRouterTeam/ai-sdk-provider):
 
 ```bash
 npm install @openrouter/ai-sdk-provider
 ```
 
-And then you can use [streamText()](https://sdk.vercel.ai/docs/reference/ai-sdk-core/stream-text) API to stream text from OpenRouter.
+And then you can use [streamText()](mdc:https:/sdk.vercel.ai/docs/reference/ai-sdk-core/stream-text) API to stream text from OpenRouter.
 
 <CodeGroup>
   ```typescript title="TypeScript"
