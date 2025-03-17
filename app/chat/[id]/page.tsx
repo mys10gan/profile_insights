@@ -17,7 +17,11 @@ import {
   RefreshCw,
   MessageSquare,
   Calendar,
-  BarChart
+  BarChart,
+  Copy,
+  Send,
+  BarChart2,
+  Download
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { Button } from '@/components/ui/button'
@@ -529,26 +533,26 @@ export default function Chat() {
   if (initialLoading) {
     return (
       <div className="flex h-screen flex-col">
-        <div className="border-b p-4 flex justify-between items-center bg-white">
+        <div className="border-b p-3 sm:p-4 flex justify-between items-center bg-white">
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => router.push('/dashboard')} className="border-gray-200">
-              <ChevronLeft className="h-4 w-4 mr-1" />
+            <Button variant="outline" size="sm" onClick={() => router.push('/dashboard')} className="border-gray-200 h-8 text-xs sm:text-sm">
+              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
               Back
             </Button>
-            <h1 className="text-xl font-semibold">Loading Chat...</h1>
+            <h1 className="text-lg sm:text-xl font-semibold">Loading Chat...</h1>
           </div>
         </div>
 
-        <div className="flex-1 p-6 flex flex-col items-center justify-center">
-          <div className="space-y-4 w-full max-w-md">
-            <Skeleton className="h-12 w-full rounded-md" />
-            <Skeleton className="h-28 w-full rounded-md" />
-            <Skeleton className="h-12 w-3/4 ml-auto rounded-md" />
-            <Skeleton className="h-36 w-full rounded-md" />
+        <div className="flex-1 p-4 sm:p-6 flex flex-col items-center justify-center">
+          <div className="space-y-3 sm:space-y-4 w-full max-w-md">
+            <Skeleton className="h-10 sm:h-12 w-full rounded-md" />
+            <Skeleton className="h-24 sm:h-28 w-full rounded-md" />
+            <Skeleton className="h-10 sm:h-12 w-3/4 ml-auto rounded-md" />
+            <Skeleton className="h-28 sm:h-36 w-full rounded-md" />
           </div>
-          <div className="mt-8 flex flex-col items-center">
-            <Loader2 className="h-10 w-10 animate-spin text-black" />
-            <p className="text-sm text-gray-500 mt-3">Loading profile insights...</p>
+          <div className="mt-6 sm:mt-8 flex flex-col items-center">
+            <Loader2 className="h-8 w-8 sm:h-10 sm:w-10 animate-spin text-black" />
+            <p className="text-xs sm:text-sm text-gray-500 mt-3">Loading profile insights...</p>
           </div>
         </div>
       </div>
@@ -557,10 +561,10 @@ export default function Chat() {
 
   if (!profile) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50">
-        <div className="text-xl font-medium mb-4">Profile not found</div>
-        <p className="text-gray-500 mb-6">The profile you're looking for doesn't exist or is still processing</p>
-        <Button onClick={() => router.push('/dashboard')} className="gap-2">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
+        <div className="text-lg sm:text-xl font-medium mb-3 sm:mb-4 text-center">Profile not found</div>
+        <p className="text-gray-500 mb-5 sm:mb-6 text-center text-sm sm:text-base">The profile you're looking for doesn't exist or is still processing</p>
+        <Button onClick={() => router.push('/dashboard')} className="gap-2 text-sm">
           <ChevronLeft className="h-4 w-4" />
           Return to Dashboard
         </Button>
@@ -570,207 +574,204 @@ export default function Chat() {
 
   return (
     <div className="flex h-screen flex-col">
-      <div className="border-b p-4 flex justify-between items-center bg-white">
+      <div className="border-b p-3 sm:p-4 flex justify-between items-center bg-white">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => router.push('/dashboard')} className="border-gray-200">
-            <ChevronLeft className="h-4 w-4 mr-1" />
+          <Button variant="outline" size="sm" onClick={() => router.push('/dashboard')} className="border-gray-200 h-8 text-xs sm:text-sm">
+            <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
             Back
           </Button>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100">
+          <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-gray-100">
             {profile?.platform === 'instagram' ? (
-              <Instagram className="h-4 w-4 text-gray-700" />
+              <Instagram className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-700" />
             ) : (
-              <Linkedin className="h-4 w-4 text-gray-700" />
+              <Linkedin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-700" />
             )}
           </div>
           <div>
-            <h1 className="text-md font-semibold">
+            <h1 className="text-sm sm:text-md font-semibold">
               {profile?.username}
             </h1>
-            <Badge variant="outline" className="text-xs text-gray-600 bg-gray-50 border-gray-200">
+            <Badge variant="outline" className="text-[10px] sm:text-xs text-gray-600 bg-gray-50 border-gray-200">
               {profile?.platform === 'instagram' ? 'Instagram' : 'LinkedIn'}
             </Badge>
           </div>
         </div>
         
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1 border-gray-200" onClick={handleStartNewChat}>
-            <RefreshCw className="h-4 w-4" />
-            New Chat
+        <div className="flex gap-1 sm:gap-2">
+          <Button variant="outline" size="sm" className="gap-1 border-gray-200 h-8 text-xs sm:text-sm whitespace-nowrap" onClick={handleStartNewChat}>
+            <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">New Chat</span>
+            <span className="xs:hidden">New</span>
           </Button>
-          <Button variant="outline" size="sm" className="gap-1 border-gray-200" onClick={exportChat}>
-            <DownloadCloud className="h-4 w-4" />
-            Export
+          <Button variant="outline" size="sm" className="gap-1 border-gray-200 h-8 text-xs sm:text-sm" onClick={exportChat}>
+            <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Export</span>
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1 border-gray-200 h-8 text-xs sm:text-sm" onClick={() => router.push(`/analysis/${id}`)}>
+            <BarChart2 className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Analysis</span>
           </Button>
         </div>
       </div>
 
-      <ScrollArea className="flex-1 p-4 bg-white">
-        <div className="space-y-4 max-w-4xl mx-auto">
-          <AnimatePresence>
+      <div className="flex-1 overflow-hidden bg-gray-50 flex flex-col">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+          <div className="max-w-3xl mx-auto space-y-4 pb-20 sm:pb-24">
             {messages.map((message) => (
-              <motion.div
-                key={message.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-                className={`flex ${
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
+              <div 
+                key={message.id} 
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div className="flex items-start gap-3 max-w-[80%]">
-                  {message.role === 'assistant' && (
-                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mt-1 flex-shrink-0">
-                      <Bot className="h-4 w-4 text-gray-700" />
+                <div 
+                  className={`
+                    relative group max-w-[85%] sm:max-w-[75%] rounded-2xl px-3 sm:px-4 py-2 sm:py-3
+                    ${message.role === 'user' 
+                      ? 'bg-black text-white' 
+                      : 'bg-white text-gray-800 border border-gray-200'}
+                  `}
+                >
+                  {message.role === 'assistant' && message.id !== 'welcome' && message.id !== 'welcome-new' && (
+                    <div className="absolute -right-5 top-1 hidden group-hover:flex">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-6 w-6 p-0 rounded-full opacity-70 hover:opacity-100"
+                        onClick={() => {
+                          navigator.clipboard.writeText(message.content)
+                          toast({
+                            title: "Copied to clipboard",
+                            variant: "default",
+                          })
+                        }}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
                   )}
-                  <div
-                    className={`rounded-lg px-4 py-3 ${
-                      message.role === 'user'
-                        ? 'bg-black text-white'
-                        : 'bg-gray-50 text-gray-900 border border-gray-100'
-                    }`}
-                  >
-                    {message.content === '...' ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>AI is thinking...</span>
-                      </div>
-                    ) : (
-                      <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:text-black prose-p:text-gray-700 prose-li:text-gray-700 prose-strong:text-black prose-strong:font-semibold prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-code:text-gray-800 prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-pre:bg-gray-100 prose-pre:text-gray-800 prose-pre:p-3 prose-pre:rounded-md prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-gray-700 prose-table:border-collapse prose-th:border prose-th:border-gray-300 prose-th:bg-gray-100 prose-th:p-2 prose-td:border prose-td:border-gray-300 prose-td:p-2">
-                        <ReactMarkdown components={{
-                          h1: ({children}) => <h1 className="text-xl font-bold mt-4 mb-2">{children}</h1>,
-                          h2: ({children}) => <h2 className="text-lg font-semibold mt-3 mb-2">{children}</h2>,
-                          h3: ({children}) => <h3 className="text-base font-semibold mt-2 mb-1">{children}</h3>,
-                          p: ({children}) => <p className="my-2">{children}</p>,
-                          ul: ({children}) => <ul className="list-disc pl-5 my-2">{children}</ul>,
-                          ol: ({children}) => <ol className="list-decimal pl-5 my-2">{children}</ol>,
-                          li: ({children}) => <li className="my-1">{children}</li>,
-                          strong: ({children}) => <strong className="font-semibold">{children}</strong>,
-                          table: ({children}) => <div className="overflow-x-auto my-2"><table className="min-w-full border-collapse">{children}</table></div>,
-                          thead: ({children}) => <thead className="bg-gray-100">{children}</thead>,
-                          th: ({children}) => <th className="border border-gray-300 px-3 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">{children}</th>,
-                          td: ({children}) => <td className="border border-gray-300 px-3 py-2 text-sm">{children}</td>,
-                          blockquote: ({children}) => <blockquote className="border-l-2 border-gray-300 pl-4 italic text-gray-700 my-2">{children}</blockquote>,
-                          code: ({className, children}) => {
-                            // Check if this is an inline code block
-                            const isInline = !className;
-                            return isInline ? 
-                              <code className="bg-gray-100 text-gray-800 px-1 py-0.5 rounded text-sm">{children}</code> : 
-                              <pre className="bg-gray-100 text-gray-800 p-3 rounded-md overflow-x-auto text-sm whitespace-pre"><code>{children}</code></pre>;
-                          },
-                          img: ({src, alt}) => (
-                            <img 
-                              src={src} 
-                              alt={alt || 'Image'} 
-                              className="max-w-full rounded-md my-2"
-                              onError={handleImageError}
-                            />
-                          ),
-                        }}>
-                          {message.content}
-                        </ReactMarkdown>
-                      </div>
-                    )}
-                    {message.role !== 'user' && message.created_at && message.id !== 'welcome' && message.id !== 'welcome-new' && (
-                      <div className="text-xs text-gray-400 mt-2 flex items-center">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                      </div>
-                    )}
+                  <div className="text-xs sm:text-sm whitespace-pre-wrap">
+                    <ReactMarkdown 
+                      components={{
+                        a: ({ node, ...props }) => (
+                          <a 
+                            {...props} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-blue-600 hover:underline"
+                          />
+                        ),
+                        p: ({ node, ...props }) => (
+                          <p {...props} className="mb-2 last:mb-0" />
+                        ),
+                        ul: ({ node, ...props }) => (
+                          <ul {...props} className="list-disc pl-5 mb-2" />
+                        ),
+                        ol: ({ node, ...props }) => (
+                          <ol {...props} className="list-decimal pl-5 mb-2" />
+                        ),
+                        li: ({ node, ...props }) => (
+                          <li {...props} className="mb-1" />
+                        ),
+                        h1: ({ node, ...props }) => (
+                          <h1 {...props} className="text-base sm:text-lg font-bold mb-2 mt-3" />
+                        ),
+                        h2: ({ node, ...props }) => (
+                          <h2 {...props} className="text-sm sm:text-base font-bold mb-2 mt-3" />
+                        ),
+                        h3: ({ node, ...props }) => (
+                          <h3 {...props} className="text-xs sm:text-sm font-bold mb-2 mt-3" />
+                        ),
+                        img: ({ node, ...props }) => (
+                          <img 
+                            {...props} 
+                            onError={handleImageError}
+                            className="max-w-full h-auto rounded my-2 max-h-64" 
+                          />
+                        ),
+                        code: ({ node, inline, className, ...props }: any) => (
+                          inline 
+                            ? <code {...props} className="bg-gray-100 dark:bg-gray-800 text-[10px] sm:text-xs px-1 py-0.5 rounded font-mono" /> 
+                            : <code {...props} className="block bg-gray-100 dark:bg-gray-800 text-[10px] sm:text-xs p-2 sm:p-3 rounded-md my-2 font-mono overflow-x-auto" />
+                        ),
+                        blockquote: ({ node, ...props }) => (
+                          <blockquote {...props} className="border-l-4 border-gray-300 pl-4 italic my-2" />
+                        ),
+                        table: ({ node, ...props }) => (
+                          <div className="overflow-x-auto my-2">
+                            <table {...props} className="min-w-full border-collapse border border-gray-300 text-[10px] sm:text-xs" />
+                          </div>
+                        ),
+                        th: ({ node, ...props }) => (
+                          <th {...props} className="border border-gray-300 px-3 py-1 bg-gray-100" />
+                        ),
+                        td: ({ node, ...props }) => (
+                          <td {...props} className="border border-gray-300 px-3 py-1" />
+                        ),
+                      }}
+                    >
+                      {message.content}
+                    </ReactMarkdown>
                   </div>
-                  {message.role === 'user' && (
-                    <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center mt-1 flex-shrink-0">
-                      <User className="h-4 w-4 text-white" />
-                    </div>
-                  )}
                 </div>
-              </motion.div>
+              </div>
             ))}
-          </AnimatePresence>
-          
-          {/* AI Thinking animation */}
-          <AnimatePresence>
-            {isThinking && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="flex justify-start"
-              >
-                <div className="flex items-start gap-3 max-w-[80%]">
-                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mt-1 flex-shrink-0">
-                    <Bot className="h-4 w-4 text-gray-700" />
-                  </div>
-                  <div className="rounded-lg px-4 py-3 bg-gray-50 text-gray-900 border border-gray-100 min-w-[250px]">
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <div className="absolute inset-0 rounded-full bg-gray-400 opacity-20 blur-md animate-pulse"></div>
-                        <Loader2 className="h-4 w-4 animate-spin text-gray-700 relative z-10" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Analyzing profile data...</p>
-                        <p className="text-xs text-gray-500 mt-1">Generating insights</p>
-                      </div>
+            {loading && (
+              <div className="flex justify-start">
+                <div className="bg-white text-gray-800 border border-gray-100 rounded-xl p-3 sm:p-4 max-w-[75%]">
+                  <div className="flex items-center gap-2">
+                    <div className="flex space-x-1">
+                      <div className="h-2 w-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
+                      <div className="h-2 w-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                      <div className="h-2 w-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
                     </div>
+                    <span className="text-xs text-gray-500">Thinking...</span>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
-          
-          <div ref={messagesEndRef} />
-        </div>
-      </ScrollArea>
-
-      {/* Suggested questions */}
-      {messages.length > 0 && messages.length < 5 && (
-        <div className="px-4 py-3 border-t bg-white">
-          <p className="text-sm text-gray-500 mb-2 flex items-center">
-            <BarChart className="h-3.5 w-3.5 mr-1.5" />
-            Suggested questions:
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {suggestedQuestions.map((question, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                size="sm"
-                className="text-xs border-gray-200 hover:bg-gray-50 transition-colors"
-                onClick={() => handleSuggestedQuestion(question)}
-              >
-                {question}
-              </Button>
-            ))}
+            <div ref={messagesEndRef} />
           </div>
         </div>
-      )}
 
-      <form onSubmit={handleSubmit} className="border-t p-4 bg-white">
-        <div className="flex gap-3 max-w-4xl mx-auto">
-          <Input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask anything about this profile..."
-            disabled={loading}
-            className="flex-1 border-gray-200 focus:border-gray-400 focus:ring-gray-300"
-            autoComplete="off"
-          />
-          <Button 
-            type="submit"
-            disabled={loading || !input.trim()}
-            className="flex-shrink-0 gap-2"
-          >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <SendHorizontal className="h-4 w-4" />
-            )}
-            Send
-          </Button>
+        <div className="fixed inset-x-0 bottom-0 bg-white border-t p-3 sm:p-4">
+          <div className="max-w-3xl mx-auto space-y-3 sm:space-y-4">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              {suggestedQuestions.map((question, i) => (
+                <Button 
+                  key={i} 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-7 sm:h-8 text-[10px] sm:text-xs px-2 sm:px-3 border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700"
+                  onClick={() => handleSuggestedQuestion(question)}
+                >
+                  {question}
+                </Button>
+              ))}
+            </div>
+
+            <form onSubmit={handleSubmit} className="flex gap-2">
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ask something about this profile..."
+                className="flex-1 text-sm border-gray-200 h-10 sm:h-12"
+                disabled={loading}
+              />
+              <Button 
+                type="submit" 
+                size="sm" 
+                disabled={loading || !input.trim()} 
+                className="h-10 sm:h-12 px-3 sm:px-4"
+              >
+                {isThinking ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </form>
+          </div>
         </div>
-      </form>
+      </div>
     </div>
   )
 } 
