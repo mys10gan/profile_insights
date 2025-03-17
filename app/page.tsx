@@ -1,103 +1,124 @@
-import Image from "next/image";
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useToast } from '@/components/ui/use-toast'
+import { supabase } from '@/lib/supabase/client'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { useRouter } from 'next/navigation'
+
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [email, setEmail] = useState('')
+  const [loading, setLoading] = useState(false)
+  const { toast } = useToast()
+  const router = useRouter()
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      console.log(session)
+      if (session) {
+        router.push('/dashboard')
+      }
+    }
+    checkSession()
+  }, [])
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+
+    try {
+      const { error } = await supabase
+        .from('waitlist')
+        .insert([{ email }])
+
+      if (error) throw error
+
+      toast({
+        title: "Success!",
+        description: "You've been added to the waitlist. We'll notify you when you're approved.",
+      })
+      setEmail('')
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24 bg-white">
+      <div className="max-w-3xl text-center">
+        <h1 className="mb-4 text-4xl font-bold tracking-tight md:text-6xl">
+          Profile Insights
+        </h1>
+        <p className="mb-8 text-lg text-gray-500 md:text-xl">
+          Chat with any social media profile and gain valuable insights. Learn from the best in the business.
+        </p>
+        
+        <div className="mx-auto max-w-md space-y-8">
+          <Card className="p-6 border border-gray-100 shadow-sm">
+            <h2 className="mb-4 text-2xl font-semibold">Join Waitlist</h2>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                required
+                className="w-full rounded-lg border border-gray-200 px-4 py-3 focus:border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-300"
+              />
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full"
+                variant="default"
+              >
+                {loading ? 'Joining...' : 'Join Waitlist'}
+              </Button>
+            </form>
+          </Card>
+
+          <Card className="p-6 border border-gray-100 shadow-sm">
+            <h2 className="mb-4 text-2xl font-semibold">Already Confirmed?</h2>
+            <p className="mb-4 text-gray-500">
+              If you've received your confirmation email, you can sign in to your account.
+            </p>
+            <Link href="/login">
+              <Button className="w-full border-gray-200" variant="outline">
+                Sign In
+              </Button>
+            </Link>
+          </Card>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-3">
+          <div>
+            <h3 className="mb-2 text-lg font-semibold">Instagram Analysis</h3>
+            <p className="text-gray-500">
+              Understand what makes successful Instagram profiles tick.
+            </p>
+          </div>
+          <div>
+            <h3 className="mb-2 text-lg font-semibold">LinkedIn Insights</h3>
+            <p className="text-gray-500">
+              Learn from top professionals and industry leaders.
+            </p>
+          </div>
+          <div>
+            <h3 className="mb-2 text-lg font-semibold">AI-Powered Chat</h3>
+            <p className="text-gray-500">
+              Get personalized insights through natural conversation.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
-  );
+  )
 }
