@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server'
 // Create a Supabase client with the service role key to bypass RLS
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, // Use available anon key instead of service role key
+  process.env.SUPABASE_SERVICE_ROLE_KEY!, // Use service role key for admin privileges
   {
     auth: {
       autoRefreshToken: false,
@@ -101,7 +101,7 @@ export async function POST(request: Request) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
+          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
         },
         body: JSON.stringify({
           platform,
@@ -137,7 +137,7 @@ export async function POST(request: Request) {
         profileId,
         username: cleanUsername,
         platform,
-        status: "scraping",
+        status: "fetching",
         estimatedTimeMinutes: 3,
         ...edgeFunctionResponse
       })
@@ -159,9 +159,9 @@ export async function POST(request: Request) {
       )
     }
   } catch (error) {
-    console.error('Scraping error:', error)
+    console.error('Fetching error:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to scrape profile' },
+      { error: error instanceof Error ? error.message : 'Failed to fetch profile data' },
       { status: 500 }
     )
   }

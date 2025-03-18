@@ -36,7 +36,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useParams } from "next/navigation";
-import { formatTimeAgo } from "@/lib/utils"
+import { formatTimeAgo, sanitizeUsername } from "@/lib/utils"
 
 interface ProfileData {
   id: string;
@@ -115,11 +115,6 @@ export default function Analysis() {
 
       if (rawDataError) {
         console.error("Error fetching raw profile data:", rawDataError);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load profile raw data.",
-        });
       } else {
         setProfileData(profileRawData);
       }
@@ -147,11 +142,11 @@ export default function Analysis() {
     if (profile.scrape_status === 'scraping' || profile.scrape_status === 'pending') {
       setScraping(true);
       setScrapeError(null);
-      setLoadingStage(`Scraping profile data... (${new Date().toLocaleTimeString()})`);
+      setLoadingStage(`Fetching profile data... (${new Date().toLocaleTimeString()})`);
     } 
     else if (profile.scrape_status === 'failed') {
       setScraping(false);
-      setScrapeError(profile.scrape_error || 'Failed to scrape profile');
+      setScrapeError(profile.scrape_error || 'Failed to fetch profile data');
     }
     else if (profile.scrape_status === 'completed') {
       setScraping(false);
@@ -186,7 +181,7 @@ export default function Analysis() {
           // Update UI based on profile status changes
           updateProfileStatusUI(updatedProfile);
           
-          // If scraping completed, refresh the full data
+          // If fetching completed, refresh the full data
           if (updatedProfile.scrape_status === 'completed' && !updatedProfile.is_stats_generating) {
             fetchData();
           }
@@ -371,17 +366,11 @@ export default function Analysis() {
     return (rate * 100).toFixed(2) + '%';
   };
 
-  const parseUsername = useMemo(() => {
-    const username = profile?.username
-    if (!username) return null;
-    if (username.includes('instagram')) {
-      return username.split('/').pop();
-    } else if (username.includes('linkedin')) {
-      return username.split('/').pop();
-    }
-    return profile?.username;
-  }, [profile?.username]);
-
+  // Update to use the shared sanitizeUsername utility
+  const displayUsername = useMemo(() => {
+    if (!profile?.username) return '';
+    return sanitizeUsername(profile.username, profile.platform);
+  }, [profile?.username, profile?.platform]);
 
   // Helper function to render Instagram stats card
   const renderInstagramStatsCard = (title: string, stats: Record<string, number | string>) => {
@@ -582,16 +571,11 @@ export default function Analysis() {
           </Button>
         </div>
 
-        <div className="flex flex-col items-center justify-center gap-4 py-6 sm:py-10 mb-4 sm:mb-6 bg-white border border-dashed border-gray-100 rounded-lg shadow-sm">
-          <div className="rounded-full bg-gray-50 p-4 sm:p-6">
-            <Loader2 className="h-8 w-8 sm:h-10 sm:w-10 animate-spin text-gray-500" />
-          </div>
-          <h2 className="text-lg sm:text-xl font-semibold">Scraping Profile Data</h2>
-          <p className="text-gray-500 max-w-md text-center text-sm sm:text-base px-4 sm:px-0">
-            We're gathering the latest data from this profile. This typically takes 2-3 minutes to complete.
-          </p>
-          <p className="text-gray-400 text-xs sm:text-sm">
-            You'll be able to view the analysis once the scraping is finished.
+        <div className="min-h-[300px] flex flex-col items-center justify-center gap-3 my-8 text-gray-500 dark:text-gray-400">
+          <Loader2 className="h-10 w-10 animate-spin" />
+          <h3 className="text-xl font-medium">Fetching profile data...</h3>
+          <p className="text-sm text-center max-w-md">
+            This could take up to 3 minutes. The page will update automatically when ready.
           </p>
         </div>
       </div>
@@ -617,7 +601,7 @@ export default function Analysis() {
           <div className="rounded-full bg-red-50 p-4 sm:p-6">
             <AlertCircle className="h-8 w-8 sm:h-10 sm:w-10 text-red-500" />
           </div>
-          <h2 className="text-lg sm:text-xl font-semibold text-red-600">Profile Scraping Failed</h2>
+          <h2 className="text-lg sm:text-xl font-semibold text-red-600">Profile Data Fetch Failed</h2>
           <p className="text-gray-700 max-w-md text-center text-sm sm:text-base px-4 sm:px-0">
             {scrapeError}
           </p>
@@ -668,7 +652,7 @@ export default function Analysis() {
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">{parseUsername}</h1>
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">{displayUsername}</h1>
                 <Badge
                   variant="outline"
                   className="bg-gray-50 text-gray-700 border-gray-200 text-xs"

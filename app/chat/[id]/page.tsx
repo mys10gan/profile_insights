@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import { supabase } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useSupabase } from '@/components/providers/supabase-provider'
+import { sanitizeUsername } from '@/lib/utils'
 import { 
   ChevronLeft, 
   SendHorizontal, 
@@ -92,10 +93,12 @@ export default function Chat() {
 
   // Platform-specific welcome messages
   const getWelcomeMessage = (platform: 'instagram' | 'linkedin', username: string) => {
+    const sanitizedUsername = sanitizeUsername(username, platform);
+    
     if (platform === 'instagram') {
-      return `👋 Hello! I'm your AI assistant specialized in analyzing Instagram profiles. I've analyzed the Instagram account "${username}" and I'm ready to provide insights about their content strategy, engagement patterns, audience demographics, and growth opportunities. What would you like to know about this profile?`;
+      return `👋 Hello! I'm your AI assistant specialized in analyzing Instagram profiles. I've analyzed the Instagram account "${sanitizedUsername}" and I'm ready to provide insights about their content strategy, engagement patterns, audience demographics, and growth opportunities. What would you like to know about this profile?`;
     } else {
-      return `👋 Hello! I'm your AI assistant specialized in analyzing LinkedIn profiles. I've analyzed the LinkedIn profile for "${username}" and I'm ready to provide insights about their professional network, content effectiveness, career trajectory, and business development opportunities. What would you like to know about this profile?`;
+      return `👋 Hello! I'm your AI assistant specialized in analyzing LinkedIn profiles. I've analyzed the LinkedIn profile for "${sanitizedUsername}" and I'm ready to provide insights about their professional network, content effectiveness, career trajectory, and business development opportunities. What would you like to know about this profile?`;
     }
   };
 
@@ -658,7 +661,7 @@ export default function Chat() {
           </div>
           <div>
             <h1 className="text-sm sm:text-md font-semibold">
-              {profile?.username}
+              {profile ? sanitizeUsername(profile.username, profile.platform) : ''}
             </h1>
             <Badge variant="outline" className="text-[10px] sm:text-xs text-gray-600 bg-gray-50 border-gray-200">
               {profile?.platform === 'instagram' ? 'Instagram' : 'LinkedIn'}

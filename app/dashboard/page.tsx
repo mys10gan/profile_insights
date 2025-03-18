@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import { supabase } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Link from 'next/link'
+import { sanitizeUsername } from '@/lib/utils'
 
 interface Profile {
   id: string
@@ -249,8 +250,8 @@ export default function Dashboard() {
         }
       }
 
-      // Call Apify to scrape the profile
-      setScrapingStage('Starting profile scraping...')
+      // Call API to fetch the profile
+      setScrapingStage('Starting profile data fetch...')
       setScrapingProgress(10)
       const response = await fetch('/api/scrape', {
         method: 'POST',
@@ -271,14 +272,14 @@ export default function Dashboard() {
         toast({
           variant: "destructive",
           title: "Error",
-          description: responseData.error || 'Failed to start profile scraping',
+          description: responseData.error || 'Failed to start profile data fetch',
         })
         setIsLoading(false);
         return
       }
 
       setScrapingProgress(30)
-      setScrapingStage('Scraping profile data... This will take about 3 minutes.')
+      setScrapingStage('Fetching profile data... This will take about 3 minutes.')
       
       // Start polling for status updates
       pollingRef.current = true;
@@ -289,7 +290,7 @@ export default function Dashboard() {
       setPollingInterval(interval);
       
       toast({
-        title: "Scraping started",
+        title: "Data fetch started",
         description: "Please wait while we collect data from the profile. This will take approximately 3 minutes.",
       })
 
@@ -553,7 +554,7 @@ export default function Dashboard() {
         const profile = data.profile;
         
         if (profile.scrape_status === 'completed') {
-          // Scraping completed successfully
+          // Fetching completed successfully
           pollingRef.current = false;
           if (pollingInterval) {
             clearInterval(pollingInterval);
@@ -561,7 +562,7 @@ export default function Dashboard() {
           }
           
           setScrapingProgress(100);
-          setScrapingStage('Scraping completed successfully!');
+          setScrapingStage('Data fetching completed successfully!');
           
           toast({
             title: "Success!",
@@ -589,7 +590,7 @@ export default function Dashboard() {
           router.push(`/analysis/${profileId}`)
         } 
         else if (profile.scrape_status === 'failed') {
-          // Scraping failed
+          // Fetching failed
           pollingRef.current = false;
           if (pollingInterval) {
             clearInterval(pollingInterval);
@@ -597,19 +598,34 @@ export default function Dashboard() {
           }
           
           setScrapingProgress(0);
-          setScrapingStage('Scraping failed');
+          setScrapingStage('Data fetching failed');
           
           toast({
             variant: "destructive",
             title: "Error",
-            description: profile.scrape_error || 'Failed to scrape profile',
+            description: profile.scrape_error || 'Failed to fetch profile data',
           });
           
           setIsLoading(false);
         }
+        else if (profile.scrape_status === 'scraping') {
+          // Processing scraped data
+          setScrapingProgress(70);
+          setScrapingStage(`Processing scraped data... (${new Date().toLocaleTimeString()})`);
+        }
+        else if (profile.scrape_status === 'fetching') {
+          // Still fetching - update progress
+          setScrapingProgress(40);
+          setScrapingStage(`Fetching profile data... (${new Date().toLocaleTimeString()})`);
+        }
+        else if (profile.scrape_status === 'pending') {
+          // Still initializing
+          setScrapingProgress(20);
+          setScrapingStage(`Starting data collection... (${new Date().toLocaleTimeString()})`);
+        }
         else {
-          // Still scraping - update progress
-          setScrapingStage(`Still scraping... (${new Date().toLocaleTimeString()})`);
+          // Unknown status
+          setScrapingStage(`Checking status... (${profile.scrape_status})`);
         }
       }
     } catch (error) {
@@ -802,7 +818,7 @@ export default function Dashboard() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="text-base sm:text-lg font-semibold truncate">
-                            {profile.username}
+                            {sanitizeUsername(profile.username, profile.platform)}
                           </h3>
                           <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 uppercase text-xs font-semibold tracking-wider">
                             {profile.platform === 'instagram' ? 'Instagram' : 'LinkedIn'}
@@ -810,11 +826,11 @@ export default function Dashboard() {
                         </div>
                         <div className="mt-1 flex items-center gap-x-1.5 text-xs sm:text-sm text-gray-500">
                           <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-none" />
-                          <span>
-                            {profile.last_scraped 
-                              ? `Last updated ${formatDistanceToNow(new Date(profile.last_scraped), { addSuffix: true })}` 
-                              : 'Not yet analyzed'}
-                          </span>
+                            <span>
+                              {profile.scrape_status === 'fetching' || profile.scrape_status === 'pending' ? 'Fetching...' : 
+                               profile.scrape_status === 'scraping' ? 'Processing...' : 
+                               profile.scrape_status === 'failed' ? 'Failed' : 'Completed'}
+                            </span>
                         </div>
                       </div>
                     </div>
@@ -923,16 +939,30 @@ export default function Dashboard() {
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <h3 className="text-sm sm:text-base font-semibold truncate">
-                                {profile.username}
+                                {sanitizeUsername(profile.username, profile.platform)}
                               </h3>
                               <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 uppercase text-[10px] sm:text-xs font-semibold tracking-wider">
                                 {profile.platform === 'instagram' ? 'Instagram' : 'LinkedIn'}
                               </Badge>
                               
+                              {profile.scrape_status === 'pending' && (
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1 text-[10px] sm:text-xs">
+                                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                                  Pending
+                                </Badge>
+                              )}
+                              
+                              {profile.scrape_status === 'fetching' && (
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1 text-[10px] sm:text-xs">
+                                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                                  Fetching
+                                </Badge>
+                              )}
+                              
                               {profile.scrape_status === 'scraping' && (
                                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1 text-[10px] sm:text-xs">
                                   <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                                  Scraping
+                                  Processing
                                 </Badge>
                               )}
                               
