@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     // Set up Apify Actor IDs and parameters
     const actorId = platform === 'instagram'
       ? 'nH2AHrwxeTRJoN5hX' // Instagram scraper Actor ID
-      : 'kfiWbq3boy3dWKbiL' // LinkedIn scraper Actor ID
+      : '2SyF0bVxmgGr8IVCZ' // LinkedIn scraper Actor ID
 
     // Prepare the request body based on the platform
     const requestBody = platform === 'instagram'
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
           commentsLimit: 50 // Get more comments per post
         }
       : {
-          linkedInProfileUrls: [username],
+          profileUrls: [username],
           includePostsData: true,
           postsLimit: 100, // Increased post limit
           includeActivityData: true, // Added to get activity data

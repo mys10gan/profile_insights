@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { generateProfileStats } from '@/lib/openrouter';
 
-export const maxDuration = 300; // Set max execution time to 300 seconds (5 minutes)
+export const maxDuration = 60; // Set max execution time to 300 seconds (5 minutes)
 export const dynamic = 'force-dynamic'; // Ensure the route is not statically optimized
 
 export async function GET(request: NextRequest) {
@@ -83,6 +83,11 @@ export async function GET(request: NextRequest) {
         throw new Error('Unauthorized access to this profile');
       }
       
+      // Validate platform
+      if (!profile.platform || (profile.platform !== 'instagram' && profile.platform !== 'linkedin')) {
+        throw new Error(`Unsupported platform: ${profile.platform}`);
+      }
+      
       // Get profile raw data
       const { data: profileData, error: profileDataError } = await supabaseAdmin
         .from('profile_data')
@@ -102,10 +107,10 @@ export async function GET(request: NextRequest) {
         ...profileData.platform_specific_data
       };
       
-      // Generate stats using our specialized function
+      // Log platform-specific analysis
       console.log(`Generating stats for ${profile.username} (${profile.platform})...`);
       
-      // This function throws errors on failure
+      // This function now handles platform-specific analysis
       const stats = await generateProfileStats(
         profile.platform,
         profile.username,
@@ -119,7 +124,7 @@ export async function GET(request: NextRequest) {
         .from('profiles')
         .update({ 
           stats,
-          is_stats_generating: false
+          is_stats_generating: false,
         })
         .eq('id', profileId);
       
@@ -130,7 +135,11 @@ export async function GET(request: NextRequest) {
       console.log('Stats saved successfully');
       
       return new NextResponse(
-        JSON.stringify({ success: true, message: 'Stats generated successfully' }),
+        JSON.stringify({ 
+          success: true, 
+          message: 'Stats generated successfully',
+          platform: profile.platform
+        }),
         {
           status: 200,
           headers: { 'Content-Type': 'application/json' }
@@ -145,10 +154,17 @@ export async function GET(request: NextRequest) {
         .update({ is_stats_generating: false })
         .eq('id', profileId);
       
+      // Return more detailed error based on type
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const platformSpecificMessage = errorMessage.includes('Unsupported platform') 
+        ? 'This platform is not supported for analysis.'
+        : 'Stats generation failed, please try again';
+      
       return new NextResponse(
         JSON.stringify({ 
           error: 'Failed to generate stats', 
-          message: 'Stats generation failed, please try again'
+          message: platformSpecificMessage,
+          details: errorMessage
         }),
         {
           status: 500,

@@ -157,6 +157,76 @@ export default function Analysis() {
     return profile.stats;
   }, [profile?.stats]);
 
+  // Get platform-specific tab and metric section names
+  const getPlatformSpecificUI = useMemo(() => {
+    if (!profile) return null;
+    
+    // Default tabs for both platforms
+    const baseTabs = {
+      overview: "Overview",
+      performance: "Performance",
+      recommendations: "Recommendations"
+    };
+    
+    if (profile.platform === 'instagram') {
+      return {
+        tabs: baseTabs,
+        metrics: {
+          audience: {
+            title: "Audience & Engagement",
+            icon: Users,
+            description: "Follower demographics and engagement metrics"
+          },
+          content: {
+            title: "Content Strategy",
+            icon: BarChart3,
+            description: "Post performance and content types"
+          },
+          visual: {
+            title: "Visual Analysis",
+            icon: LineChart,
+            description: "Visual themes and aesthetic consistency"
+          },
+          growth: {
+            title: "Growth Tactics",
+            icon: TrendingUp,
+            description: "Opportunities to increase followers & engagement"
+          }
+        }
+      };
+    } else {
+      // LinkedIn-specific UI elements
+      return {
+        tabs: {
+          ...baseTabs,
+          performance: "Professional Content"
+        },
+        metrics: {
+          audience: {
+            title: "Network Analysis",
+            icon: Users,
+            description: "Connection quality and professional reach"
+          },
+          content: {
+            title: "Thought Leadership",
+            icon: BarChart3,
+            description: "Professional content effectiveness"
+          },
+          visual: {
+            title: "Career & Skills",
+            icon: LineChart,
+            description: "Professional trajectory and expertise"
+          },
+          growth: {
+            title: "Business Development",
+            icon: TrendingUp,
+            description: "Professional growth opportunities"
+          }
+        }
+      };
+    }
+  }, [profile]);
+
   // Ensure loading state is properly managed
   useEffect(() => {
     if (profile && !profile.is_stats_generating) {
@@ -399,7 +469,9 @@ export default function Analysis() {
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="mb-4 sm:mb-6 grid w-full grid-cols-3 p-1 bg-gray-50 rounded-md">
             <TabsTrigger value="overview" className="rounded-sm text-xs sm:text-sm py-1.5 sm:py-2">Overview</TabsTrigger>
-            <TabsTrigger value="performance" className="rounded-sm text-xs sm:text-sm py-1.5 sm:py-2">Performance</TabsTrigger>
+            <TabsTrigger value="performance" className="rounded-sm text-xs sm:text-sm py-1.5 sm:py-2">
+              {getPlatformSpecificUI?.tabs.performance || "Performance"}
+            </TabsTrigger>
             <TabsTrigger value="recommendations" className="rounded-sm text-xs sm:text-sm py-1.5 sm:py-2">Recommendations</TabsTrigger>
           </TabsList>
 
@@ -410,10 +482,10 @@ export default function Analysis() {
                 <CardHeader className="bg-gray-50/50 p-4 sm:p-6">
                   <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                     <Users className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-                    Audience Metrics
+                    {getPlatformSpecificUI?.metrics.audience.title || "Audience Metrics"}
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm">
-                    Follower demographics and audience insights
+                    {getPlatformSpecificUI?.metrics.audience.description || "Follower demographics and audience insights"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-4 sm:pt-6 p-4 sm:p-6">
@@ -461,10 +533,12 @@ export default function Analysis() {
                 <CardHeader className="bg-gray-50/50 p-4 sm:p-6">
                   <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                     <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-                    Engagement Insights
+                    {profile?.platform === 'instagram' ? "Engagement Insights" : "Professional Engagement"}
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm">
-                    How audiences interact with content
+                    {profile?.platform === 'instagram' 
+                      ? "How audiences interact with content" 
+                      : "How professionals interact with your content"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-4 sm:pt-6 p-4 sm:p-6">
@@ -516,10 +590,10 @@ export default function Analysis() {
                 <CardHeader className="bg-gray-50/50 p-4 sm:p-6">
                   <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                     <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-                    Content Performance
+                    {getPlatformSpecificUI?.metrics.content.title || "Content Performance"}
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm">
-                    Analysis of post effectiveness
+                    {getPlatformSpecificUI?.metrics.content.description || "Analysis of post effectiveness"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-4 sm:pt-6 p-4 sm:p-6">
@@ -562,21 +636,25 @@ export default function Analysis() {
                 </CardContent>
               </Card>
 
-              {/* Competitive Analysis */}
+              {/* Visual Analysis / Career & Skills */}
               <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader className="bg-gray-50/50 p-4 sm:p-6">
                   <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                     <LineChart className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-                    Competitive Analysis
+                    {getPlatformSpecificUI?.metrics.visual.title || "Competitive Analysis"}
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm">
-                    Industry comparison and positioning
+                    {getPlatformSpecificUI?.metrics.visual.description || "Industry comparison and positioning"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-4 sm:pt-6 p-4 sm:p-6">
-                  {formattedStats.competitiveAnalysis ? (
+                  {(formattedStats.competitiveAnalysis || 
+                    (profile?.platform === 'linkedin' && formattedStats.careerAndSkills)) ? (
                     <div className="space-y-4">
-                      {Object.entries(formattedStats.competitiveAnalysis).map(
+                      {Object.entries(profile?.platform === 'linkedin' 
+                        ? (formattedStats.careerAndSkills || formattedStats.competitiveAnalysis || {})
+                        : (formattedStats.competitiveAnalysis || {})
+                      ).map(
                         ([key, value]) => {
                           if (Array.isArray(value)) {
                             return (
@@ -607,7 +685,7 @@ export default function Analysis() {
                   ) : (
                     <div className="py-8 text-center text-gray-500">
                       <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p>No competitive analysis available</p>
+                      <p>No {profile?.platform === 'linkedin' ? 'career and skills' : 'competitive analysis'} available</p>
                     </div>
                   )}
                 </CardContent>
@@ -622,10 +700,10 @@ export default function Analysis() {
                 <CardHeader className="bg-gray-50/50 p-4 sm:p-6">
                   <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                     <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-                    Growth Opportunities
+                    {getPlatformSpecificUI?.metrics.growth.title || "Growth Opportunities"}
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm">
-                    Areas to improve performance
+                    {getPlatformSpecificUI?.metrics.growth.description || "Areas to improve performance"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-4 sm:pt-6 p-4 sm:p-6">
@@ -675,7 +753,11 @@ export default function Analysis() {
                     <Lightbulb className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
                     Key Takeaways
                   </CardTitle>
-                  <CardDescription className="text-xs sm:text-sm">Most important insights</CardDescription>
+                  <CardDescription className="text-xs sm:text-sm">
+                    {profile?.platform === 'instagram' 
+                      ? "Most important content and engagement insights" 
+                      : "Most valuable professional development insights"}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-4 sm:pt-6 p-4 sm:p-6">
                   {formattedStats.keyTakeaways ? (

@@ -65,16 +65,39 @@ export default function Chat() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [isThinking, setIsThinking] = useState(false)
-  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([
-    "What content performs best on this profile?",
-    "How can I improve my engagement rate?",
-    "What posting frequency would you recommend?",
-    "What are the strengths of this profile?"
-  ])
+  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
   const router = useRouter()
   const { user } = useSupabase()
+
+  // Platform-specific question suggestions
+  const getDefaultSuggestions = (platform: 'instagram' | 'linkedin') => {
+    if (platform === 'instagram') {
+      return [
+        "What content performs best on this profile?",
+        "How can I improve my engagement rate?",
+        "What posting frequency would you recommend?",
+        "What visual themes are most effective?"
+      ];
+    } else {
+      return [
+        "How strong is this professional network?",
+        "What content demonstrates thought leadership?",
+        "How can I improve my professional branding?",
+        "What skills should I highlight more?"
+      ];
+    }
+  };
+
+  // Platform-specific welcome messages
+  const getWelcomeMessage = (platform: 'instagram' | 'linkedin', username: string) => {
+    if (platform === 'instagram') {
+      return `👋 Hello! I'm your AI assistant specialized in analyzing Instagram profiles. I've analyzed the Instagram account "${username}" and I'm ready to provide insights about their content strategy, engagement patterns, audience demographics, and growth opportunities. What would you like to know about this profile?`;
+    } else {
+      return `👋 Hello! I'm your AI assistant specialized in analyzing LinkedIn profiles. I've analyzed the LinkedIn profile for "${username}" and I'm ready to provide insights about their professional network, content effectiveness, career trajectory, and business development opportunities. What would you like to know about this profile?`;
+    }
+  };
 
   // Prevent page reloads by storing conversation state in sessionStorage
   useEffect(() => {
@@ -91,6 +114,7 @@ export default function Chat() {
         setProfile(profile)
         setConversationId(conversationId)
         setMessages(messages)
+        setSuggestedQuestions(getDefaultSuggestions(profile.platform))
         setInitialLoading(false)
         return
       } catch (e) {
@@ -114,6 +138,9 @@ export default function Chat() {
           throw profileError
         }
         setProfile(profileData)
+        
+        // Set initial suggested questions based on platform
+        setSuggestedQuestions(getDefaultSuggestions(profileData.platform))
 
         // Create or fetch conversation
         const { data: conversationData, error: conversationError } = await supabase
@@ -169,7 +196,7 @@ export default function Chat() {
             id: 'welcome',
             conversation_id: conversationId,
             role: 'assistant' as const,
-            content: `👋 Hello! I'm your AI assistant specialized in analyzing social media profiles. I've analyzed ${profileData.platform === 'instagram' ? 'Instagram' : 'LinkedIn'} profile "${profileData.username}" and I'm ready to provide insights. What would you like to know about this profile?`,
+            content: getWelcomeMessage(profileData.platform, profileData.username),
             created_at: new Date().toISOString()
           }
           finalMessages = [welcomeMessage]
@@ -389,39 +416,76 @@ export default function Chat() {
 
   // Generate contextually relevant suggested questions
   const generateSuggestedQuestions = (userMessage: string, aiResponse: string) => {
-    // Base questions that are always relevant
-    const baseQuestions = [
-      `How does this compare to other ${profile?.platform} profiles?`,
-      "What content formats should I focus on?",
-      "How can I increase my followers?",
-      "What are the weaknesses I should address?"
-    ]
+    if (!profile) return;
+    
+    // Base questions that are always relevant based on platform
+    const platformBaseQuestions = profile.platform === 'instagram' 
+      ? [
+          "What is the overall aesthetic of this profile?",
+          "How can I improve my visual content?",
+          "What hashtag strategy works best?",
+          "How can I increase my followers?"
+        ]
+      : [
+          "How does this compare to other professionals?",
+          "What content formats work best for thought leadership?",
+          "How can I improve my professional network?",
+          "What skills should I prioritize developing?"
+        ];
     
     // Context-aware questions based on user's current question and AI's response
-    const contextQuestions = []
+    const contextQuestions = [];
     
-    if (userMessage.toLowerCase().includes("engagement") || aiResponse.toLowerCase().includes("engagement")) {
-      contextQuestions.push("What factors affect engagement on this profile?")
-    }
-    
-    if (userMessage.toLowerCase().includes("content") || aiResponse.toLowerCase().includes("content")) {
-      contextQuestions.push("What content themes resonate most with the audience?")
-    }
-    
-    if (userMessage.toLowerCase().includes("post") || aiResponse.toLowerCase().includes("post")) {
-      contextQuestions.push("When is the best time to post for maximum reach?")
-    }
-    
-    if (userMessage.toLowerCase().includes("audience") || aiResponse.toLowerCase().includes("audience")) {
-      contextQuestions.push("What demographics make up the core audience?")
+    if (profile.platform === 'instagram') {
+      // Instagram-specific contextual questions
+      if (userMessage.toLowerCase().includes("engagement") || aiResponse.toLowerCase().includes("engagement")) {
+        contextQuestions.push("What factors affect engagement on this profile?");
+      }
+      
+      if (userMessage.toLowerCase().includes("content") || aiResponse.toLowerCase().includes("content")) {
+        contextQuestions.push("What content themes resonate most with the audience?");
+      }
+      
+      if (userMessage.toLowerCase().includes("post") || aiResponse.toLowerCase().includes("post")) {
+        contextQuestions.push("When is the best time to post for maximum reach?");
+      }
+      
+      if (userMessage.toLowerCase().includes("audience") || aiResponse.toLowerCase().includes("audience")) {
+        contextQuestions.push("What demographics make up the core audience?");
+      }
+      
+      if (userMessage.toLowerCase().includes("reel") || aiResponse.toLowerCase().includes("reel")) {
+        contextQuestions.push("How do reels perform compared to regular posts?");
+      }
+    } else {
+      // LinkedIn-specific contextual questions
+      if (userMessage.toLowerCase().includes("network") || aiResponse.toLowerCase().includes("network")) {
+        contextQuestions.push("How can I expand my professional network strategically?");
+      }
+      
+      if (userMessage.toLowerCase().includes("content") || aiResponse.toLowerCase().includes("content")) {
+        contextQuestions.push("What professional content demonstrates expertise?");
+      }
+      
+      if (userMessage.toLowerCase().includes("skill") || aiResponse.toLowerCase().includes("skill")) {
+        contextQuestions.push("Which skills are most valuable for this industry?");
+      }
+      
+      if (userMessage.toLowerCase().includes("connection") || aiResponse.toLowerCase().includes("connection")) {
+        contextQuestions.push("How can I improve connection request acceptance rate?");
+      }
+      
+      if (userMessage.toLowerCase().includes("article") || aiResponse.toLowerCase().includes("article")) {
+        contextQuestions.push("How do LinkedIn articles compare to posts for thought leadership?");
+      }
     }
     
     // Combine and select questions
-    const allQuestions = [...contextQuestions, ...baseQuestions]
-    const selectedQuestions = allQuestions.slice(0, 4) // Limit to 4 questions
+    const allQuestions = [...contextQuestions, ...platformBaseQuestions];
+    const selectedQuestions = allQuestions.slice(0, 4); // Limit to 4 questions
     
-    setSuggestedQuestions(selectedQuestions)
-  }
+    setSuggestedQuestions(selectedQuestions);
+  };
 
   const handleSuggestedQuestion = (question: string) => {
     setInput(question)
@@ -433,10 +497,10 @@ export default function Chat() {
   }
 
   const handleStartNewChat = async () => {
-    if (!user || !id) return
+    if (!user || !id || !profile) return;
 
     try {
-      setInitialLoading(true)
+      setInitialLoading(true);
       // Create a new conversation
       const { data: newConversation, error: createError } = await supabase
         .from('conversations')
@@ -445,52 +509,46 @@ export default function Chat() {
           profile_id: id
         }])
         .select()
-        .single()
+        .single();
 
       if (createError) {
-        console.error('New conversation creation error:', createError)
-        throw createError
+        console.error('New conversation creation error:', createError);
+        throw createError;
       }
       
-      setConversationId(newConversation.id)
+      setConversationId(newConversation.id);
 
-      // Add welcome message
+      // Add platform-specific welcome message
       const welcomeMessage = {
         id: 'welcome-new',
         conversation_id: newConversation.id,
         role: 'assistant' as const,
-        content: `👋 Hello! I'm your AI assistant specialized in analyzing social media profiles. I've analyzed ${profile?.platform === 'instagram' ? 'Instagram' : 'LinkedIn'} profile "${profile?.username}" and I'm ready to provide insights. What would you like to know about this profile?`,
+        content: getWelcomeMessage(profile.platform, profile.username),
         created_at: new Date().toISOString()
-      }
-      setMessages([welcomeMessage])
+      };
+      setMessages([welcomeMessage]);
 
-      // Reset suggested questions
-      const defaultSuggestions = [
-        "What content performs best on this profile?",
-        "How can I improve my engagement rate?",
-        "What posting frequency would you recommend?",
-        "What are the strengths of this profile?"
-      ]
-      setSuggestedQuestions(defaultSuggestions)
+      // Reset suggested questions based on platform
+      setSuggestedQuestions(getDefaultSuggestions(profile.platform));
       
       // Update cache
       sessionStorage.setItem(`chat_${id}`, JSON.stringify({
         profile,
         conversationId: newConversation.id,
         messages: [welcomeMessage]
-      }))
+      }));
 
     } catch (error) {
-      console.error('New chat error:', error)
+      console.error('New chat error:', error);
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to start new chat.",
-      })
+      });
     } finally {
-      setInitialLoading(false)
+      setInitialLoading(false);
     }
-  }
+  };
 
   const exportChat = () => {
     try {

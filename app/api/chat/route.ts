@@ -87,10 +87,20 @@ export async function POST(request: Request) {
         userMessage: message
       }
 
+      // convert chatContext to message string
+      const messageStr = `
+      Profile: ${JSON.stringify(chatContext.profile)}
+      History: ${JSON.stringify(chatContext.history)}
+      User Message: ${chatContext.userMessage}
+      `
+
       try {
         // Call the analyzeProfile function from lib/openrouter.ts
         console.log("Calling OpenRouter API for analysis")
-        const aiMessage = await analyzeProfile(JSON.stringify(chatContext))
+        const aiMessage = await analyzeProfile(
+          profileData.platform_specific_data.platform,
+          messageStr
+        )
         console.log("Received response from OpenRouter API")
         
         return NextResponse.json({ message: aiMessage })

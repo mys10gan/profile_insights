@@ -3,9 +3,10 @@ if (!process.env.OPENROUTER_API_KEY) {
   console.warn('OPENROUTER_API_KEY is not set in environment variables');
 }
 
-const ANALYSIS_HEURISTICS = `
-You are an AI assistant that analyses social media profiles.
-The user will upload a JSON file or Text file. analyse the attached JSON and share in the format below:
+// Platform-specific analysis prompts
+const INSTAGRAM_ANALYSIS_PROMPT = `# System prompt
+
+The user will upload a JSON file. analyse the attached JSON and share in the format below:
 
 # Comprehensive Intelligence from LinkedIn Data
 
@@ -143,42 +144,133 @@ Give answers in detail, and back them up with examples and metrics.
 - Just provide the answer to the question.
 - Dont ask any follow up questions.
 - Avoid overly casual language or unnecessary enthusiasm. No filler words or excessive politeness. Stay neutral and professional, get straight to the point.
-- Always use action oriented language.
+- Always use action oriented language.`;
+
+const LINKEDIN_ANALYSIS_PROMPT = `
+# System prompt
+
+You are an AI assistant that analyzes LinkedIn profiles.
+The user will upload a JSON file. analyse the attached JSON and share in the format below:
+
+# Comprehensive Intelligence from LinkedIn Data
+
+## 1. Professional Network Quality
+- Connection quantity and growth pattern
+- Industry and sector distribution of connections
+- Connection quality (decision makers, influencers, peers)
+- Network reach and visibility metrics
+- Connection engagement level assessment
+
+## 2. Content Engagement Analysis
+- Post engagement rate calculation and benchmarking
+- Comment quality and professional relevance
+- Content sharing and amplification metrics
+- Engagement trends over time
+- Engagement by connection type (1st/2nd/3rd degree)
+
+## 3. Content Type Effectiveness
+- Article vs. post vs. document performance comparison
+- Native LinkedIn content vs. external link sharing
+- Text-only vs. visual content performance
+- Long-form vs. short-form content engagement
+- Professional video content effectiveness
+
+## 4. Thought Leadership Assessment
+- Industry expertise demonstration effectiveness
+- Original thought vs. curated content performance
+- Citation and reference by other professionals
+- Authority building content identification
+- Knowledge sharing effectiveness metrics
+
+## 5. Career Trajectory Visualization
+- Professional progression pace and pattern
+- Role transition strategy effectiveness
+- Industry movement and pivoting strategy
+- Skill acquisition and development timeline
+- Job tenure patterns and optimization
+
+## 6. Skills & Endorsement Analysis
+- Core vs. peripheral skill identification
+- Skill endorsement patterns and credibility
+- Skill gap analysis vs. industry demand
+- Certification and credential effectiveness
+- Skill showcase optimization strategy
+
+## 7. Professional Branding Consistency
+- Personal brand message clarity
+- Visual identity consistency (photo, banner, media)
+- Voice and communication style consistency
+- Professional positioning uniqueness
+- Personal vs. corporate brand alignment
+
+## 8. Recommendation Quality Assessment
+- Recommendation depth and specificity
+- Recommender credibility and relevance
+- Skill verification through recommendations
+- Recommendation reciprocity patterns
+- Strategic recommendation acquisition
+
+## 9. Professional Activity Patterns
+- Platform engagement frequency and timing
+- Comment and reaction behavior analysis
+- Group participation and community involvement
+- Content consumption vs. creation balance
+- Professional event participation visibility
+
+## 10. Industry Positioning Analysis
+- Competitor and peer comparison
+- Industry thought leadership positioning
+- Niche specialization vs. generalist approach
+- Industry trend alignment and anticipation
+- Cross-industry influence potential
+
+## 11. Business Development Potential
+- Lead generation indicator assessment
+- Client and partner relationship nurturing
+- Sales signal identification and amplification
+- Business opportunity visibility optimization
+- Professional service showcase effectiveness
+
+## 12. Professional Growth Opportunities
+- Network expansion strategic recommendations
+- Content strategy enhancement opportunities
+- Skill development priority recommendations
+- Professional credential acquisition opportunities
+- Visibility and influence amplification tactics
+
+## 13. Executive Presence Assessment
+- Leadership content effectiveness
+- Authority signaling optimization
+- Executive communication pattern analysis
+- Professional gravitas demonstration
+- Strategic visibility to senior decision makers
+
+Give answers in detail with specific examples from the data. Be direct, professional and action-oriented.
+Avoid unnecessary greetings or follow-up questions. Focus on providing actionable insights to improve professional presence.
 `;
 
-// Helper function to ensure we have valid JSON
-function ensureValidJson(data: any): any {
-  try {
-    // If it's already a JS object, just return it
-    if (typeof data === 'object' && data !== null) {
-      return data;
-    }
-    
-    // If it's a string, try to parse it
-    if (typeof data === 'string') {
-      return JSON.parse(data);
-    }
-    
-    // If we can't handle it, return a default error object
-    return {
-      error: "Invalid data format",
-      details: "Could not convert to valid JSON"
-    };
-  } catch (error) {
-    console.error('Error ensuring valid JSON:', error);
-    return {
-      error: "JSON parsing failed",
-      details: error instanceof Error ? error.message : "Unknown error"
-    };
-  }
-}
 
-/**
- * General function to analyze a profile using AI
- */
-export async function analyzeProfile(profileData: string) {
+export async function analyzeProfile(platform: string, profileData: string) {
   try {
-    console.log('Sending request to OpenRouter API...');
+    console.log(`Sending ${platform} profile request to OpenRouter API...`);
+
+    console.debug('Profile data:', profileData);
+    
+    // Select the appropriate analysis prompt based on platform
+    const analysisPrompt = platform === 'instagram' 
+      ? INSTAGRAM_ANALYSIS_PROMPT 
+      : LINKEDIN_ANALYSIS_PROMPT;
+
+    const messages = [
+      {
+        "role": "system",
+        "content": analysisPrompt
+      },
+      {
+        "role": "user",
+        "content": profileData
+      }
+    ];
     
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -190,18 +282,7 @@ export async function analyzeProfile(profileData: string) {
       },
       body: JSON.stringify({
         "model": "google/gemini-2.0-flash-001",
-        "messages": [
-          {
-            "role": "system",
-            "content": ANALYSIS_HEURISTICS
-          },
-          {
-            "role": "user",
-            "content": profileData
-          }
-        ],
-        "temperature": 0.3,
-        "max_tokens": 4000
+        "messages": messages,
       })
     });
     
@@ -228,27 +309,44 @@ export async function analyzeProfile(profileData: string) {
   }
 }
 
-/**
- * Specialized function to generate social media profile stats
- */
+
 export async function generateProfileStats(platform: string, username: string, profileData: any) {
   try {
     console.log(`Generating stats for ${username} (${platform})...`);
     
-    // Create a specialized prompt for stats generation
-    const statsPrompt = `
-      You are an AI social media analytics expert analyzing a ${platform} profile for ${username}.
+    // Create platform-specific prompts for stats generation
+    let statsPrompt = '';
+    if (platform === 'instagram') {
+      statsPrompt = `
+        You are an AI Instagram analytics expert analyzing a profile for ${username}.
+        Generate profile stats in JSON format with these exact sections:
+        - audienceMetrics: follower count, demographics, growth rate, follower-to-following ratio
+        - contentPerformance: post frequency, engagement rates, top-performing content types (photos/videos/reels/stories)
+        - engagementInsights: likes, comments, saves, shares patterns, hashtag effectiveness
+        - growthOpportunities: content gaps, engagement tactics, optimal posting times
+        - competitiveAnalysis: comparison with similar profiles, industry benchmarks
+        - keyTakeaways: visual branding strengths, content strategy recommendations, community building tactics
+
+        Format as {"profileAnalysis": { audienceMetrics: {}, contentPerformance: {}, etc }}
+        Keep all keys as strings and avoid arrays where possible.
+      `;
+    } else if (platform === 'linkedin') {
+      statsPrompt = `
+        You are an AI LinkedIn analytics expert analyzing a profile for ${username}.
       Generate profile stats in JSON format with these exact sections:
-      - audienceMetrics: follower count, demographics
-      - contentPerformance: post frequency, engagement rates, top content
-      - engagementInsights: comments, likes, patterns
-      - growthOpportunities: areas to improve, engagement tactics
-      - competitiveAnalysis: industry comparison 
-      - keyTakeaways: most important insights
+        - audienceMetrics: connection quality, industry distribution, follower demographics, profile visibility score
+        - contentPerformance: post engagement by type (articles/posts/documents), professional content themes, thought leadership indicators
+        - engagementInsights: comment quality, professional network interaction patterns, endorsement distributions
+        - growthOpportunities: professional network expansion tactics, skill highlighting recommendations, content gaps
+        - competitiveAnalysis: industry positioning, professional credential comparison, career trajectory
+        - keyTakeaways: professional branding strengths, business development opportunities, expertise demonstration recommendations
 
       Format as {"profileAnalysis": { audienceMetrics: {}, contentPerformance: {}, etc }}
       Keep all keys as strings and avoid arrays where possible.
     `;
+    } else {
+      throw new Error(`Unsupported platform: ${platform}`);
+    }
 
     // Extract only the essential profile data to reduce payload size
     let essentialData: Record<string, any> = {};
@@ -268,7 +366,18 @@ export async function generateProfileStats(platform: string, username: string, p
                   caption: post.caption,
                   likeCount: post.likeCount,
                   commentCount: post.commentCount,
-                  timestamp: post.timestamp
+                  timestamp: post.timestamp,
+                  type: post.type || 'post',
+                  mediaType: post.mediaType || 'unknown'
+                }))
+              : [],
+            reelsSample: profileData.reels
+              ? profileData.reels.slice(0, 5).map((reel: any) => ({
+                  caption: reel.caption,
+                  playCount: reel.playCount,
+                  likeCount: reel.likeCount,
+                  commentCount: reel.commentCount,
+                  timestamp: reel.timestamp
                 }))
               : []
           };
@@ -279,14 +388,27 @@ export async function generateProfileStats(platform: string, username: string, p
             summary: profileData.summary || '',
             followerCount: profileData.followerCount || 'Not Available',
             connectionCount: profileData.connectionCount || 'Not Available',
+            skills: profileData.skills || [],
+            experience: profileData.experience 
+              ? profileData.experience.slice(0, 3).map((exp: any) => ({
+                  title: exp.title,
+                  company: exp.company,
+                  duration: exp.duration,
+                  description: exp.description
+                }))
+              : [],
+            education: profileData.education || [],
             postSample: profileData.posts 
               ? profileData.posts.slice(0, 5).map((post: any) => ({
                   text: post.text,
                   reactions: post.reactions,
                   comments: post.comments,
-                  date: post.date
+                  date: post.date,
+                  contentType: post.contentType || 'post'
                 }))
-              : []
+              : [],
+            articles: profileData.articles || [],
+            certifications: profileData.certifications || []
           };
         }
       }
