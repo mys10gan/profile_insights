@@ -6,7 +6,7 @@ if (!process.env.OPENROUTER_API_KEY) {
 // Platform-specific analysis prompts
 const INSTAGRAM_ANALYSIS_PROMPT = `# System prompt
 
-The user will upload a JSON file. analyse the attached JSON and share in the format below:
+The user will attach JSON data. Analyse the attached JSON and share in the format below:
 
 # Comprehensive Intelligence from LinkedIn Data
 
@@ -253,8 +253,6 @@ Avoid unnecessary greetings or follow-up questions. Focus on providing actionabl
 export async function analyzeProfile(platform: string, profileData: string) {
   try {
     console.log(`Sending ${platform} profile request to OpenRouter API...`);
-
-    console.debug('Profile data:', profileData);
     
     // Select the appropriate analysis prompt based on platform
     const analysisPrompt = platform === 'instagram' 
@@ -281,7 +279,7 @@ export async function analyzeProfile(platform: string, profileData: string) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        "model": "google/gemini-2.0-flash-001",
+        "model": "anthropic/claude-3.5-sonnet",
         "messages": messages,
       })
     });
@@ -348,77 +346,11 @@ export async function generateProfileStats(platform: string, username: string, p
       throw new Error(`Unsupported platform: ${platform}`);
     }
 
-    // Extract only the essential profile data to reduce payload size
-    let essentialData: Record<string, any> = {};
-    
-    try {
-      if (typeof profileData === 'object' && profileData !== null) {
-        // Extract only what's needed based on platform
-        if (platform === 'instagram') {
-          essentialData = {
-            username: username,
-            followerCount: profileData.followerCount || 'Not Available',
-            followingCount: profileData.followingCount || 'Not Available',
-            postsCount: profileData.postsCount || 'Not Available',
-            bio: profileData.bio || '',
-            postSample: profileData.posts 
-              ? profileData.posts.slice(0, 5).map((post: any) => ({
-                  caption: post.caption,
-                  likeCount: post.likeCount,
-                  commentCount: post.commentCount,
-                  timestamp: post.timestamp,
-                  type: post.type || 'post',
-                  mediaType: post.mediaType || 'unknown'
-                }))
-              : [],
-            reelsSample: profileData.reels
-              ? profileData.reels.slice(0, 5).map((reel: any) => ({
-                  caption: reel.caption,
-                  playCount: reel.playCount,
-                  likeCount: reel.likeCount,
-                  commentCount: reel.commentCount,
-                  timestamp: reel.timestamp
-                }))
-              : []
-          };
-        } else if (platform === 'linkedin') {
-          essentialData = {
-            username: username,
-            headline: profileData.headline || '',
-            summary: profileData.summary || '',
-            followerCount: profileData.followerCount || 'Not Available',
-            connectionCount: profileData.connectionCount || 'Not Available',
-            skills: profileData.skills || [],
-            experience: profileData.experience 
-              ? profileData.experience.slice(0, 3).map((exp: any) => ({
-                  title: exp.title,
-                  company: exp.company,
-                  duration: exp.duration,
-                  description: exp.description
-                }))
-              : [],
-            education: profileData.education || [],
-            postSample: profileData.posts 
-              ? profileData.posts.slice(0, 5).map((post: any) => ({
-                  text: post.text,
-                  reactions: post.reactions,
-                  comments: post.comments,
-                  date: post.date,
-                  contentType: post.contentType || 'post'
-                }))
-              : [],
-            articles: profileData.articles || [],
-            certifications: profileData.certifications || []
-          };
-        }
-      }
-    } catch (err) {
-      console.warn('Error extracting essential data, using minimal version:', err);
-      essentialData = { username, platform };
-    }
     
     // Convert to string with reasonable size limit
-    const profileDataString = JSON.stringify(essentialData).slice(0, 30000);
+    const profileDataString = `
+      ${JSON.stringify(profileData)}
+    `;
       
     console.log('Profile data prepared for analysis, calling OpenRouter API');
 
@@ -432,7 +364,7 @@ export async function generateProfileStats(platform: string, username: string, p
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        "model": "google/gemini-2.0-flash-001",
+        "model": "google/gemini-2.0-pro-exp-02-05:free",
         "messages": [
           {
             "role": "system",
