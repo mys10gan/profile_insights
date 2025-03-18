@@ -5,7 +5,7 @@ import { analyzeProfile } from '@/lib/openrouter'
 // Create a Supabase client with the anon key
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, // Use anon key instead of service role key
+  process.env.SUPABASE_SERVICE_ROLE_KEY!, 
   {
     auth: {
       autoRefreshToken: false,
@@ -39,6 +39,25 @@ export async function POST(request: Request) {
     try {
       // Fetch profile data
       console.log("Fetching profile data for profileId:", profileId)
+      
+      // First get the profile to determine its platform
+      const { data: profile, error: profileLookupError } = await supabase
+        .from('profiles')
+        .select('platform')
+        .eq('id', profileId)
+        .single();
+        
+      if (profileLookupError) {
+        console.error('Error fetching profile platform:', profileLookupError);
+        return NextResponse.json(
+          { error: 'Failed to fetch profile information' },
+          { status: 500 }
+        );
+      }
+      
+      const platform = profile?.platform || 'instagram'; // Default to instagram if not found
+      
+      // Now get the profile data
       const { data: profileData, error: profileError } = await supabase
         .from('profile_data')
         .select('platform_specific_data')
@@ -64,6 +83,9 @@ export async function POST(request: Request) {
       }
       
       console.log("Profile data fetched successfully")
+      
+      // Logging the platform to verify
+      console.log(`Platform detected: ${platform}`)
 
       // Fetch conversation history
       const { data: messages, error: messagesError } = await supabase
@@ -87,7 +109,7 @@ export async function POST(request: Request) {
         userMessage: message
       }
 
-      console.log("Chat context:", profileData.platform_specific_data.platform)
+      console.log("Chat context prepared")
 
       // convert chatContext to message string
       const messageStr = `
@@ -100,7 +122,7 @@ export async function POST(request: Request) {
         // Call the analyzeProfile function from lib/openrouter.ts
         console.log("Calling OpenRouter API for analysis")
         const aiMessage = await analyzeProfile(
-          profileData.platform_specific_data.platform,
+          platform, // Use the directly fetched platform instead of trying to access it from the profile data
           messageStr
         )
         console.log("Received response from OpenRouter API")
