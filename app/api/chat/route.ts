@@ -2,6 +2,9 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { analyzeProfile } from '@/lib/openrouter'
 
+
+export const maxDuration = 30;
+
 // Create a Supabase client with the anon key
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
