@@ -379,7 +379,7 @@ export default function Analysis() {
     } else if (username.includes('linkedin')) {
       return username.split('/').pop();
     }
-    return null;
+    return profile?.username;
   }, [profile?.username]);
 
 
