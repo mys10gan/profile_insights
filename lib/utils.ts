@@ -32,3 +32,31 @@ export function extractLinkedInUsername(url: string): string {
   
   return username
 }
+
+/**
+ * Sanitizes a username or profile URL for display
+ * Handles Instagram and LinkedIn URLs/usernames
+ * 
+ * @param username - Raw username or URL
+ * @param platform - 'instagram' or 'linkedin'
+ * @returns Sanitized username for display
+ */
+export function sanitizeUsername(username: string, platform: 'instagram' | 'linkedin'): string {
+  if (!username) return username;
+  
+  if (platform === 'instagram') {
+    // Handle Instagram username formats
+    if (username.includes('instagram.com')) {
+      return username.split('/').pop()?.replace('@', '') || username;
+    }
+    return username.replace('@', '');
+  } else {
+    // Handle LinkedIn URL formats with regex
+    if (username.includes('linkedin.com')) {
+      // Extract username from linkedin.com/in/username or other LinkedIn URL formats
+      const match = username.match(/linkedin\.com\/in\/([^\/\?\&]+)/i);
+      return match ? match[1] : username;
+    }
+    return username;
+  }
+}
