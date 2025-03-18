@@ -7,9 +7,16 @@ import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ["latin"] });
 
+
 export const metadata: Metadata = {
-  title: "Profile Insights",
+  title: "Insights AI",
   description: "AI-powered social media profile analysis",
+  icons: {
+    icon: [
+      { url: '/favicon.svg' },
+      { url: '/logo.svg' }
+    ],
+  }
 };
 
 export default function RootLayout({

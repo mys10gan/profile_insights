@@ -56,7 +56,7 @@ export default function Home() {
     <div className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24 bg-white">
       <div className="max-w-3xl text-center">
         <h1 className="mb-4 text-4xl font-bold tracking-tight md:text-6xl">
-          Profile Insights
+          Insights AI
         </h1>
         <p className="mb-8 text-lg text-gray-500 md:text-xl">
           Chat with any social media profile and gain valuable insights. Learn from the best in the business.
