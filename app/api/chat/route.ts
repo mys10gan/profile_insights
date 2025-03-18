@@ -87,6 +87,8 @@ export async function POST(request: Request) {
         userMessage: message
       }
 
+      console.log("Chat context:", profileData.platform_specific_data.platform)
+
       // convert chatContext to message string
       const messageStr = `
       Profile: ${JSON.stringify(chatContext.profile)}

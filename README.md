@@ -114,3 +114,52 @@ This is a private project. Please do not share the code without permission.
 ## License
 
 All rights reserved.
+
+## Deploying the Supabase Edge Function
+
+The application uses a Supabase Edge Function for scraping social media profiles. Follow these steps to deploy it:
+
+1. Make sure you have Docker Desktop installed and running
+2. Navigate to the project root directory
+3. Run the following command:
+
+```bash
+supabase functions deploy profile-scraper
+```
+
+4. After deployment, add the APIFY_API_TOKEN to your Supabase project:
+
+```bash
+supabase secrets set APIFY_API_TOKEN=your_apify_token
+```
+
+5. Apply the database migration to add the needed columns:
+
+```bash
+supabase migration up
+```
+
+## Development
+
+1. Clone this repository
+2. Install dependencies: `npm install`
+3. Start the development server: `npm run dev`
+4. Access the application at `http://localhost:3000`
+
+## Tech Stack
+
+- Nextjs
+- Shadcn
+- Tailwind
+- Lucid icon
+- Supabase
+- Openrouter using openai sdk
+- Claude
+- Apify
+
+## Features
+
+- Email and password based login
+- Instagram and LinkedIn profile analysis
+- AI-powered insights on social media profiles
+- Background processing with Supabase Edge Functions

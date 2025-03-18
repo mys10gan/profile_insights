@@ -119,11 +119,14 @@ export async function GET(request: NextRequest) {
       
       console.log('Stats generated successfully');
       
+      // Make sure stats has the profileAnalysis structure expected by the frontend
+      const formattedStats = stats.profileAnalysis ? stats : { profileAnalysis: stats };
+      
       // Update profile with generated stats
       const { error: updateError } = await supabaseAdmin
         .from('profiles')
         .update({ 
-          stats,
+          stats: formattedStats,
           is_stats_generating: false,
         })
         .eq('id', profileId);

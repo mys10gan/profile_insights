@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -22,7 +22,8 @@ import {
   Heart,
   LineChart,
   TrendingUp,
-  Lightbulb
+  Lightbulb,
+  AlertCircle
 } from "lucide-react";
 import {
   Card,
@@ -35,6 +36,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useParams } from "next/navigation";
+import { formatTimeAgo } from "@/lib/utils"
 
 interface ProfileData {
   id: string;
@@ -52,6 +54,8 @@ interface Profile {
   last_scraped: string;
   stats?: any;
   is_stats_generating?: boolean;
+  scrape_status?: 'pending' | 'scraping' | 'completed' | 'failed';
+  scrape_error?: string;
 }
 
 export default function Analysis() {
@@ -69,8 +73,10 @@ export default function Analysis() {
   const { toast } = useToast();
   const router = useRouter();
   const { user } = useSupabase();
+  const [scraping, setScraping] = useState(false);
+  const [scrapeError, setScrapeError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       if (!user) return
 
@@ -96,6 +102,9 @@ export default function Analysis() {
 
       // Set profile data
       setProfile(profileData);
+      
+      // Update UI based on profile status
+      updateProfileStatusUI(profileData);
 
       // Fetch raw profile data
       const { data: profileRawData, error: rawDataError } = await supabase
@@ -131,11 +140,65 @@ export default function Analysis() {
       setLoading(false);
       setGeneratingStats(false);
     }
-  };
+  }, [id, user, toast]);
+
+  // Helper function to update UI based on profile status
+  const updateProfileStatusUI = useCallback((profile: Profile) => {
+    if (profile.scrape_status === 'scraping' || profile.scrape_status === 'pending') {
+      setScraping(true);
+      setScrapeError(null);
+      setLoadingStage(`Scraping profile data... (${new Date().toLocaleTimeString()})`);
+    } 
+    else if (profile.scrape_status === 'failed') {
+      setScraping(false);
+      setScrapeError(profile.scrape_error || 'Failed to scrape profile');
+    }
+    else if (profile.scrape_status === 'completed') {
+      setScraping(false);
+      setScrapeError(null);
+      
+      // Update generatingStats based on profile data
+      setGeneratingStats(!!profile.is_stats_generating);
+    }
+  }, [setScraping, setScrapeError, setLoadingStage, setGeneratingStats]);
 
   useEffect(() => {
+    if (!id) return;
+    
     fetchData();
-  }, [id, user]);
+
+    // Set up Supabase real-time subscription to profile changes
+    const profilesSubscription = supabase
+      .channel('profile-updates-' + id)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${id}`
+        },
+        (payload) => {
+          // Update profile data with latest changes
+          const updatedProfile = payload.new as Profile;
+          setProfile((prev: Profile | null) => prev ? { ...prev, ...updatedProfile } : updatedProfile);
+          
+          // Update UI based on profile status changes
+          updateProfileStatusUI(updatedProfile);
+          
+          // If scraping completed, refresh the full data
+          if (updatedProfile.scrape_status === 'completed' && !updatedProfile.is_stats_generating) {
+            fetchData();
+          }
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      profilesSubscription.unsubscribe();
+    };
+  }, [id, fetchData, updateProfileStatusUI, setProfile, supabase]);
 
   // Map profileAnalysis format to expected format if needed
   const formattedStats = useMemo(() => {
@@ -170,27 +233,35 @@ export default function Analysis() {
     
     if (profile.platform === 'instagram') {
       return {
-        tabs: baseTabs,
+        tabs: {
+          ...baseTabs,
+          performance: "Content & Engagement"
+        },
         metrics: {
           audience: {
-            title: "Audience & Engagement",
+            title: "Audience & Reach",
             icon: Users,
-            description: "Follower demographics and engagement metrics"
+            description: "Follower demographics and reach metrics"
           },
           content: {
-            title: "Content Strategy",
+            title: "Content Performance",
             icon: BarChart3,
-            description: "Post performance and content types"
+            description: "Posts, reels, and stories performance"
           },
-          visual: {
-            title: "Visual Analysis",
+          engagement: {
+            title: "Engagement Analysis",
+            icon: Heart,
+            description: "Likes, comments, and interaction patterns"
+          },
+          hashtags: {
+            title: "Hashtag Strategy",
             icon: LineChart,
-            description: "Visual themes and aesthetic consistency"
+            description: "Hashtag effectiveness and reach"
           },
           growth: {
-            title: "Growth Tactics",
+            title: "Growth Strategy",
             icon: TrendingUp,
-            description: "Opportunities to increase followers & engagement"
+            description: "Follower growth and engagement tactics"
           }
         }
       };
@@ -284,6 +355,170 @@ export default function Analysis() {
     }
   };
 
+  // Format numbers with K/M suffix
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    }
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+  };
+
+  // Format engagement rate as percentage
+  const formatEngagementRate = (rate: number) => {
+    return (rate * 100).toFixed(2) + '%';
+  };
+
+  const parseUsername = useMemo(() => {
+    const username = profile?.username
+    if (!username) return null;
+    if (username.includes('instagram')) {
+      return username.split('/').pop();
+    } else if (username.includes('linkedin')) {
+      return username.split('/').pop();
+    }
+    return null;
+  }, [profile?.username]);
+
+
+  // Helper function to render Instagram stats card
+  const renderInstagramStatsCard = (title: string, stats: Record<string, number | string>) => {
+    if (!stats) return null;
+
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4">
+        {Object.entries(stats).map(([key, value]) => (
+          <div key={key} className="text-center p-3 bg-gray-50 rounded-lg">
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900">
+              {typeof value === 'number' ? 
+                (key.toLowerCase().includes('rate') ? formatEngagementRate(value) : formatNumber(value))
+                : value}
+            </p>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">
+              {key.replace(/([A-Z])/g, ' $1').trim()}
+            </p>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Modify the TabsContent for Instagram-specific view
+  const renderInstagramContent = () => {
+    if (!profile || profile.platform !== 'instagram' || !formattedStats) return null;
+
+    return (
+      <div className="grid gap-4 sm:gap-6 grid-cols-1">
+        {/* Quick Stats Overview */}
+        <Card className="border border-gray-100 shadow-sm">
+          <CardHeader className="bg-gray-50/50 p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">Quick Stats</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Key performance indicators</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            {renderInstagramStatsCard("Overview", {
+              Followers: formattedStats.audienceMetrics?.totalFollowers || 0,
+              Posts: formattedStats.contentPerformance?.totalPosts || 0,
+              EngagementRate: formattedStats.engagementInsights?.averageEngagementRate || 0,
+              ReachRate: formattedStats.audienceMetrics?.reachRate || 0,
+              AvgLikes: formattedStats.engagementInsights?.averageLikes || 0,
+              AvgComments: formattedStats.engagementInsights?.averageComments || 0
+            })}
+          </CardContent>
+        </Card>
+
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2">
+          {/* Content Performance */}
+          <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="bg-gray-50/50 p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                Content Performance
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Analysis of posts, reels, and stories
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4 sm:pt-6 p-4 sm:p-6">
+              {formattedStats.contentPerformance && (
+                <div className="space-y-4">
+                  {Object.entries(formattedStats.contentPerformance).map(
+                    ([key, value]) => {
+                      if (Array.isArray(value)) {
+                        return (
+                          <div key={key} className="space-y-2">
+                            <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                              {key === 'topPerformingPosts' && <TrendingUp className="h-4 w-4 text-green-500" />}
+                              {key === 'contentTypes' && <BarChart3 className="h-4 w-4 text-blue-500" />}
+                              {key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
+                            </h4>
+                            <ul className="list-disc pl-5 space-y-1">
+                              {value.map((item, i) => (
+                                <li key={i} className="text-gray-600 text-sm">{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Engagement Analysis */}
+          <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="bg-gray-50/50 p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                Engagement Analysis
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                How your audience interacts with content
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4 sm:pt-6 p-4 sm:p-6">
+              {formattedStats.engagementInsights && (
+                <div className="space-y-4">
+                  {Object.entries(formattedStats.engagementInsights).map(
+                    ([key, value]) => {
+                      if (Array.isArray(value)) {
+                        return (
+                          <div key={key} className="space-y-2">
+                            <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                              {key === 'bestTimeToPost' && <CalendarClock className="h-4 w-4 text-purple-500" />}
+                              {key === 'engagementTrends' && <LineChart className="h-4 w-4 text-orange-500" />}
+                              {key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
+                            </h4>
+                            <ul className="list-disc pl-5 space-y-1">
+                              {value.map((item, i) => (
+                                <li key={i} className="text-gray-600 text-sm">{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  };
+
+  // Helper function to check if platform is Instagram
+  const isInstagramProfile = (platform?: string): boolean => {
+    return platform === 'instagram';
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto max-w-6xl p-4 py-8">
@@ -332,6 +567,71 @@ export default function Analysis() {
     );
   }
 
+  if (scraping) {
+    return (
+      <div className="container mx-auto max-w-6xl p-4 py-8">
+        <div className="mb-8">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push("/dashboard")}
+            className="border-gray-200 mb-4 sm:mb-6 text-xs sm:text-sm h-8 sm:h-9"
+          >
+            <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+            Back to Dashboard
+          </Button>
+        </div>
+
+        <div className="flex flex-col items-center justify-center gap-4 py-6 sm:py-10 mb-4 sm:mb-6 bg-white border border-dashed border-gray-100 rounded-lg shadow-sm">
+          <div className="rounded-full bg-gray-50 p-4 sm:p-6">
+            <Loader2 className="h-8 w-8 sm:h-10 sm:w-10 animate-spin text-gray-500" />
+          </div>
+          <h2 className="text-lg sm:text-xl font-semibold">Scraping Profile Data</h2>
+          <p className="text-gray-500 max-w-md text-center text-sm sm:text-base px-4 sm:px-0">
+            We're gathering the latest data from this profile. This typically takes 2-3 minutes to complete.
+          </p>
+          <p className="text-gray-400 text-xs sm:text-sm">
+            You'll be able to view the analysis once the scraping is finished.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (scrapeError) {
+    return (
+      <div className="container mx-auto max-w-6xl p-4 py-8">
+        <div className="mb-8">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push("/dashboard")}
+            className="border-gray-200 mb-4 sm:mb-6 text-xs sm:text-sm h-8 sm:h-9"
+          >
+            <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+            Back to Dashboard
+          </Button>
+        </div>
+
+        <div className="flex flex-col items-center justify-center gap-4 py-6 sm:py-10 mb-4 sm:mb-6 bg-white border border-dashed border-red-100 rounded-lg shadow-sm">
+          <div className="rounded-full bg-red-50 p-4 sm:p-6">
+            <AlertCircle className="h-8 w-8 sm:h-10 sm:w-10 text-red-500" />
+          </div>
+          <h2 className="text-lg sm:text-xl font-semibold text-red-600">Profile Scraping Failed</h2>
+          <p className="text-gray-700 max-w-md text-center text-sm sm:text-base px-4 sm:px-0">
+            {scrapeError}
+          </p>
+          <Button 
+            variant="outline"
+            onClick={() => router.push("/dashboard")}
+          >
+            Return to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (!profile) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -342,7 +642,7 @@ export default function Analysis() {
     );
   }
 
-  const rawData = profileData?.raw_data || null;
+  console.log(profileData?.scraped_at);
 
   return (
     <div className="container mx-auto max-w-6xl p-4 py-6 sm:py-8">
@@ -368,7 +668,7 @@ export default function Analysis() {
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">{profile.username}</h1>
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">{parseUsername}</h1>
                 <Badge
                   variant="outline"
                   className="bg-gray-50 text-gray-700 border-gray-200 text-xs"
@@ -379,8 +679,8 @@ export default function Analysis() {
               <p className="text-gray-500 mt-1 flex items-center gap-1 text-xs sm:text-sm">
                 <CalendarClock className="h-3 w-3 sm:h-4 sm:w-4" />
                 Last updated{" "}
-                {profile.last_scraped
-                  ? format(new Date(profile.last_scraped), "PPpp")
+                {profileData?.scraped_at
+                  ? formatTimeAgo(profileData.scraped_at)
                   : "Never"}
               </p>
             </div>
@@ -467,120 +767,126 @@ export default function Analysis() {
 
       {formattedStats && (
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="mb-4 sm:mb-6 grid w-full grid-cols-3 p-1 bg-gray-50 rounded-md">
-            <TabsTrigger value="overview" className="rounded-sm text-xs sm:text-sm py-1.5 sm:py-2">Overview</TabsTrigger>
-            <TabsTrigger value="performance" className="rounded-sm text-xs sm:text-sm py-1.5 sm:py-2">
-              {getPlatformSpecificUI?.tabs.performance || "Performance"}
-            </TabsTrigger>
-            <TabsTrigger value="recommendations" className="rounded-sm text-xs sm:text-sm py-1.5 sm:py-2">Recommendations</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <TabsList className="mb-4 sm:mb-6 flex w-max min-w-full p-1 bg-gray-50 rounded-md">
+              <TabsTrigger value="overview" className="rounded-sm text-xs sm:text-sm py-1.5 sm:py-2 flex-1 whitespace-nowrap">Overview</TabsTrigger>
+              <TabsTrigger value="performance" className="rounded-sm text-xs sm:text-sm py-1.5 sm:py-2 flex-1 whitespace-nowrap">
+                {isInstagramProfile(profile?.platform) ? 'Content & Engagement' : getPlatformSpecificUI?.tabs.performance || 'Professional Content'}
+              </TabsTrigger>
+              <TabsTrigger value="recommendations" className="rounded-sm text-xs sm:text-sm py-1.5 sm:py-2 flex-1 whitespace-nowrap">Recommendations</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="overview">
-            <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2">
-              {/* Audience Metrics */}
-              <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                <CardHeader className="bg-gray-50/50 p-4 sm:p-6">
-                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                    <Users className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-                    {getPlatformSpecificUI?.metrics.audience.title || "Audience Metrics"}
-                  </CardTitle>
-                  <CardDescription className="text-xs sm:text-sm">
-                    {getPlatformSpecificUI?.metrics.audience.description || "Follower demographics and audience insights"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-4 sm:pt-6 p-4 sm:p-6">
-                  {formattedStats.audienceMetrics ? (
-                    <div className="space-y-3 sm:space-y-4">
-                      {Object.entries(formattedStats.audienceMetrics).map(
-                        ([key, value]) => {
-                          if (Array.isArray(value)) {
+            {isInstagramProfile(profile?.platform) ? (
+              renderInstagramContent()
+            ) : (
+              <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2">
+                {/* Audience Metrics */}
+                <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="bg-gray-50/50 p-4 sm:p-6">
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                      <Users className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                      {getPlatformSpecificUI?.metrics.audience.title || "Audience Metrics"}
+                    </CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">
+                      {getPlatformSpecificUI?.metrics.audience.description || "Follower demographics and audience insights"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-4 sm:pt-6 p-4 sm:p-6">
+                    {formattedStats.audienceMetrics ? (
+                      <div className="space-y-3 sm:space-y-4">
+                        {Object.entries(formattedStats.audienceMetrics).map(
+                          ([key, value]) => {
+                            if (Array.isArray(value)) {
+                              return (
+                                <div key={key} className="space-y-1 sm:space-y-2">
+                                  <h4 className="font-medium text-gray-900 text-sm sm:text-base">
+                                    {key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
+                                  </h4>
+                                  <ul className="list-disc pl-5 space-y-0.5 sm:space-y-1">
+                                    {value.map((item, i) => (
+                                      <li key={i} className="text-gray-600 text-xs sm:text-sm">{item}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              );
+                            }
+                            
                             return (
-                              <div key={key} className="space-y-1 sm:space-y-2">
-                                <h4 className="font-medium text-gray-900 text-sm sm:text-base">
+                              <div key={key} className="border-b border-gray-100 pb-2 sm:pb-3 last:border-0 last:pb-0">
+                                <h4 className="font-medium text-gray-900 mb-0.5 sm:mb-1 text-sm sm:text-base">
                                   {key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
                                 </h4>
-                                <ul className="list-disc pl-5 space-y-0.5 sm:space-y-1">
-                                  {value.map((item, i) => (
-                                    <li key={i} className="text-gray-600 text-xs sm:text-sm">{item}</li>
-                                  ))}
-                                </ul>
+                                <p className="text-gray-600 text-xs sm:text-sm">{value as string}</p>
                               </div>
                             );
                           }
-                          
-                          return (
-                            <div key={key} className="border-b border-gray-100 pb-2 sm:pb-3 last:border-0 last:pb-0">
-                              <h4 className="font-medium text-gray-900 mb-0.5 sm:mb-1 text-sm sm:text-base">
-                                {key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
-                              </h4>
-                              <p className="text-gray-600 text-xs sm:text-sm">{value as string}</p>
-                            </div>
-                          );
-                        }
-                      )}
-                    </div>
-                  ) : (
-                    <div className="py-6 sm:py-8 text-center text-gray-500">
-                      <BarChart3 className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-2 sm:mb-4 text-gray-300" />
-                      <p className="text-sm sm:text-base">No audience metrics available</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="py-6 sm:py-8 text-center text-gray-500">
+                        <BarChart3 className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-2 sm:mb-4 text-gray-300" />
+                        <p className="text-sm sm:text-base">No audience metrics available</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
-              {/* Engagement Insights */}
-              <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                <CardHeader className="bg-gray-50/50 p-4 sm:p-6">
-                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                    <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-                    {profile?.platform === 'instagram' ? "Engagement Insights" : "Professional Engagement"}
-                  </CardTitle>
-                  <CardDescription className="text-xs sm:text-sm">
-                    {profile?.platform === 'instagram' 
-                      ? "How audiences interact with content" 
-                      : "How professionals interact with your content"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-4 sm:pt-6 p-4 sm:p-6">
-                  {formattedStats.engagementInsights ? (
-                    <div className="space-y-4">
-                      {Object.entries(formattedStats.engagementInsights).map(
-                        ([key, value]) => {
-                          if (Array.isArray(value)) {
+                {/* Engagement Insights */}
+                <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="bg-gray-50/50 p-4 sm:p-6">
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                      <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                      {profile?.platform === 'instagram' ? "Engagement Insights" : "Professional Engagement"}
+                    </CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">
+                      {profile?.platform === 'instagram' 
+                        ? "How audiences interact with content" 
+                        : "How professionals interact with your content"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-4 sm:pt-6 p-4 sm:p-6">
+                    {formattedStats.engagementInsights ? (
+                      <div className="space-y-4">
+                        {Object.entries(formattedStats.engagementInsights).map(
+                          ([key, value]) => {
+                            if (Array.isArray(value)) {
+                              return (
+                                <div key={key} className="space-y-2">
+                                  <h4 className="font-medium text-gray-900">
+                                    {key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
+                                  </h4>
+                                  <ul className="list-disc pl-5 space-y-1">
+                                    {value.map((item, i) => (
+                                      <li key={i} className="text-gray-600 text-sm">{item}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              );
+                            }
+                            
                             return (
-                              <div key={key} className="space-y-2">
-                                <h4 className="font-medium text-gray-900">
+                              <div key={key} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
+                                <h4 className="font-medium text-gray-900 mb-1">
                                   {key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
                                 </h4>
-                                <ul className="list-disc pl-5 space-y-1">
-                                  {value.map((item, i) => (
-                                    <li key={i} className="text-gray-600 text-sm">{item}</li>
-                                  ))}
-                                </ul>
+                                <p className="text-gray-600 text-sm">{value as string}</p>
                               </div>
                             );
                           }
-                          
-                          return (
-                            <div key={key} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
-                              <h4 className="font-medium text-gray-900 mb-1">
-                                {key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
-                              </h4>
-                              <p className="text-gray-600 text-sm">{value as string}</p>
-                            </div>
-                          );
-                        }
-                      )}
-                    </div>
-                  ) : (
-                    <div className="py-8 text-center text-gray-500">
-                      <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p>No engagement insights available</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="py-8 text-center text-gray-500">
+                        <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p>No engagement insights available</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="performance">
@@ -641,10 +947,10 @@ export default function Analysis() {
                 <CardHeader className="bg-gray-50/50 p-4 sm:p-6">
                   <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                     <LineChart className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-                    {getPlatformSpecificUI?.metrics.visual.title || "Competitive Analysis"}
+                    {isInstagramProfile(profile?.platform) ? 'Visual Analysis' : getPlatformSpecificUI?.metrics?.visual?.title || 'Career & Skills'}
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm">
-                    {getPlatformSpecificUI?.metrics.visual.description || "Industry comparison and positioning"}
+                    {isInstagramProfile(profile?.platform) ? 'Visual themes and aesthetic consistency' : getPlatformSpecificUI?.metrics?.visual?.description || 'Professional trajectory and expertise'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-4 sm:pt-6 p-4 sm:p-6">

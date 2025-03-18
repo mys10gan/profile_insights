@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import { supabase } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useSupabase } from '@/components/providers/supabase-provider'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Loader2, Instagram, Linkedin, User, Calendar, Clock, TrendingUp, Edit, Trash2, BarChart, MessageSquare, Search, PlusCircle, ChevronRight, LayoutDashboard, LogOut, ChevronDown } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
+import { Loader2, Instagram, Linkedin, User, Calendar, Clock, TrendingUp, Edit, Trash2, BarChart, MessageSquare, Search, PlusCircle, ChevronRight, LayoutDashboard, LogOut, ChevronDown, CalendarClock, X } from 'lucide-react'
+import { formatDistanceToNow, format } from 'date-fns'
 import {
   Card,
   CardContent,
@@ -49,12 +49,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import Link from 'next/link'
 
 interface Profile {
   id: string
   platform: 'instagram' | 'linkedin'
   username: string
   last_scraped: string
+  scrape_status: string
 }
 
 interface ProfileStats {
@@ -84,7 +86,7 @@ const progressAnimation = `
 export default function Dashboard() {
   const [platform, setPlatform] = useState<'instagram' | 'linkedin'>('instagram')
   const [username, setUsername] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [scrapingStage, setScrapingStage] = useState<string | null>(null)
   const [scrapingProgress, setScrapingProgress] = useState(0)
   const [recentProfiles, setRecentProfiles] = useState<Profile[]>([])
@@ -104,6 +106,8 @@ export default function Dashboard() {
   const router = useRouter()
   const { user } = useSupabase()
   const [showAllProfiles, setShowAllProfiles] = useState(false)
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null)
+  const pollingRef = useRef<boolean>(false)
 
   useEffect(() => {
     if (!user) return
@@ -154,7 +158,7 @@ export default function Dashboard() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
+    setIsLoading(true)
     setScrapingStage('Initializing profile...')
     setScrapingProgress(10)
 
@@ -246,8 +250,8 @@ export default function Dashboard() {
       }
 
       // Call Apify to scrape the profile
-      setScrapingStage('Scraping profile data...')
-      setScrapingProgress(30)
+      setScrapingStage('Starting profile scraping...')
+      setScrapingProgress(10)
       const response = await fetch('/api/scrape', {
         method: 'POST',
         headers: {
@@ -260,8 +264,6 @@ export default function Dashboard() {
         }),
       })
 
-      setScrapingStage('Processing results...')
-      setScrapingProgress(70)
       const responseData = await response.json();
       
       if (!response.ok) {
@@ -269,33 +271,32 @@ export default function Dashboard() {
         toast({
           variant: "destructive",
           title: "Error",
-          description: responseData.error || 'Failed to scrape profile',
+          description: responseData.error || 'Failed to start profile scraping',
         })
+        setIsLoading(false);
         return
       }
 
-      setScrapingProgress(90)
-      setScrapingStage('Finalizing analysis...')
-
+      setScrapingProgress(30)
+      setScrapingStage('Scraping profile data... This will take about 3 minutes.')
+      
+      // Start polling for status updates
+      pollingRef.current = true;
+      const interval = setInterval(() => {
+        checkProfileStatus(profileId);
+      }, 10000); // Check every 10 seconds
+      
+      setPollingInterval(interval);
+      
       toast({
-        title: "Success!",
-        description: `Profile analysis complete. Retrieved ${responseData.dataCount || 0} items.`,
+        title: "Scraping started",
+        description: "Please wait while we collect data from the profile. This will take approximately 3 minutes.",
       })
 
-      // Show a more detailed success toast with metrics
-      if (responseData.metrics) {
-        const metrics = responseData.metrics;
-        const metricsList = platform === 'instagram'
-          ? `Followers: ${metrics.followers} | Posts: ${metrics.posts} | Engagement: ${metrics.engagementRate}`
-          : `Connections: ${metrics.connections} | Posts: ${metrics.posts} | Skills: ${metrics.skills}`;
-        
-        toast({
-          title: "Analysis Details",
-          description: metricsList,
-          variant: "default"
-        });
-      }
-
+      // Refresh the profile stats to show the new data
+      await fetchProfileStats(profileId);
+      setIsLoading(false);
+      
       // Refresh the profile list
       const { data: updatedProfiles, error: profilesError } = await supabase
         .from('profiles')
@@ -346,7 +347,7 @@ export default function Dashboard() {
         description: errorMessage,
       })
     } finally {
-      setLoading(false)
+      setIsLoading(false)
       setScrapingStage(null)
       setScrapingProgress(0)
     }
@@ -534,6 +535,98 @@ export default function Dashboard() {
     }
   };
 
+  // Add function to check profile status
+  const checkProfileStatus = useCallback(async (profileId: string) => {
+    if (!profileId || !pollingRef.current) return;
+    
+    try {
+      // Use the API endpoint to check status instead of direct Supabase query
+      const response = await fetch(`/api/scrape?profileId=${profileId}`);
+      if (!response.ok) {
+        console.error('Error checking profile status:', response.statusText);
+        return;
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.profile) {
+        const profile = data.profile;
+        
+        if (profile.scrape_status === 'completed') {
+          // Scraping completed successfully
+          pollingRef.current = false;
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+            setPollingInterval(null);
+          }
+          
+          setScrapingProgress(100);
+          setScrapingStage('Scraping completed successfully!');
+          
+          toast({
+            title: "Success!",
+            description: `Profile analysis complete.`,
+          });
+          
+          // Refresh the profile stats to show the new data
+          await fetchProfileStats(profileId);
+          setIsLoading(false);
+          
+          // Refresh the profile list
+          const { data: updatedProfiles, error: profilesError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', user?.id || '')
+            .order('last_scraped', { ascending: false })
+            .limit(10)
+   
+          if (profilesError) {
+            console.error('Error refreshing profiles:', profilesError)
+          } else {
+            setRecentProfiles(updatedProfiles || [])
+          }
+   
+          router.push(`/analysis/${profileId}`)
+        } 
+        else if (profile.scrape_status === 'failed') {
+          // Scraping failed
+          pollingRef.current = false;
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+            setPollingInterval(null);
+          }
+          
+          setScrapingProgress(0);
+          setScrapingStage('Scraping failed');
+          
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: profile.scrape_error || 'Failed to scrape profile',
+          });
+          
+          setIsLoading(false);
+        }
+        else {
+          // Still scraping - update progress
+          setScrapingStage(`Still scraping... (${new Date().toLocaleTimeString()})`);
+        }
+      }
+    } catch (error) {
+      console.error('Error in status check:', error);
+    }
+  }, [pollingInterval, toast, fetchProfileStats, router, supabase, user?.id]);
+  
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      pollingRef.current = false;
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [pollingInterval]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <div className="container mx-auto max-w-6xl p-4 py-8">
@@ -542,7 +635,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-3 justify-center sm:justify-start mb-2">
               <svg className="w-10 h-10 text-primary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M15.907 11.998 10.332 9.23a.9.9 0 0 1-.16-.037l-.018-.007v6.554c0 .017.008.034.01.051l2.388-2.974 3.355-.82Z"/>
-                <path d="m11.463 4.054 5.579 3.323A4.02 4.02 0 0 1 18.525 9c.332.668.47 1.414.398 2.155a3.07 3.07 0 0 1-.745 1.65a3.108 3.108 0 0 1-1.55.951c-.022.007-.045.005-.07.01-.062.03-.126.057-.191.08l-2.72.667-1.992 2.48c-.18.227-.41.409-.67.534.047.034.085.077.137.107a2.05 2.05 0 0 0 1.995.035c.592-.33 2.15-1.201 4.636-2.892l.28-.19c1.328-.895 3.616-2.442 3.967-4.215a9.94 9.94 0 0 0-1.713-4.154a10.027 10.027 0 0 0-3.375-2.989a10.107 10.107 0 0 0-8.802-.418c1.162.287 2.287.704 3.354 1.243Z"/>
+                <path d="m11.463 4.054 5.579 3.323A4.02 4.02 0 0 1 18.525 9c.332.668.47 1.414.398 2.155a3.07 3.07 0 0 1-.745 1.65a3.108 3.108 0 0 1-1.55.951c-.022.007-.045.005-.07.01-.062.03-.126.057-.08l-2.72.667-1.992 2.48c-.18.227-.41.409-.67.534.047.034.085.077.137.107a2.05 2.05 0 0 0 1.995.035c.592-.33 2.15-1.201 4.636-2.892l.28-.19c1.328-.895 3.616-2.442 3.967-4.215a9.94 9.94 0 0 0-1.713-4.154a10.027 10.027 0 0 0-3.375-2.989a10.107 10.107 0 0 0-8.802-.418c1.162.287 2.287.704 3.354 1.243Z"/>
                 <path d="M5.382 17.082v-6.457a3.7 3.7 0 0 1 .45-1.761a3.733 3.733 0 0 1 1.238-1.34a3.915 3.915 0 0 1 3.433-.245c.176.03.347.084.508.161l5.753 2.856c.082.05.161.105.236.165a2.128 2.128 0 0 0-.953-1.455l-5.51-3.284c-1.74-.857-3.906-1.523-5.244-1.097a9.96 9.96 0 0 0-2.5 3.496a9.895 9.895 0 0 0 .283 8.368a9.973 9.973 0 0 0 2.73 3.322a17.161 17.161 0 0 1-.424-2.729Z"/>
                 <path d="m19.102 16.163-.272.183c-2.557 1.74-4.169 2.64-4.698 2.935a4.083 4.083 0 0 1-2 .53a3.946 3.946 0 0 1-1.983-.535a3.788 3.788 0 0 1-1.36-1.361a3.752 3.752 0 0 1-.51-1.85a1.812 1.812 0 0 1-.043-.26V9.143c0-.024.009-.046.01-.07-.056.02-.11.043-.162.07a1.796 1.796 0 0 0-.787 1.516v6.377a10.67 10.67 0 0 0 1.113 4.27a10.11 10.11 0 0 0 8.505-.53a10.022 10.022 0 0 0 3.282-2.858a9.936 9.936 0 0 0 1.75-3.97a19.615 19.615 0 0 1-2.845 2.216Z"/>
               </svg>
@@ -608,7 +701,7 @@ export default function Dashboard() {
                       onChange={(e) => setUsername(e.target.value)}
                       placeholder={platform === 'instagram' ? '@username' : 'https://linkedin.com/in/username'}
                       required
-                      disabled={loading}
+                      disabled={isLoading}
                       className="border-gray-200 pl-10 pr-20 bg-gray-50/50 h-12"
                     />
                     <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-1">
@@ -617,7 +710,7 @@ export default function Dashboard() {
                         variant={platform === 'instagram' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setPlatform('instagram')}
-                        disabled={loading}
+                        disabled={isLoading}
                         className={`h-8 px-2 rounded-full ${platform === 'instagram' ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'border-gray-200'}`}
                       >
                         <Instagram className="h-4 w-4" />
@@ -627,7 +720,7 @@ export default function Dashboard() {
                         variant={platform === 'linkedin' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setPlatform('linkedin')}
-                        disabled={loading}
+                        disabled={isLoading}
                         className={`h-8 px-2 rounded-full ${platform === 'linkedin' ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'border-gray-200'}`}
                       >
                         <Linkedin className="h-4 w-4" />
@@ -638,10 +731,10 @@ export default function Dashboard() {
 
                 <Button 
                   type="submit"
-                  disabled={loading}
+                  disabled={isLoading}
                   className="w-full h-10 sm:h-12 bg-black hover:bg-black/90 text-white rounded-full"
                 >
-                  {loading ? (
+                  {isLoading ? (
                     <span className="flex items-center justify-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       {scrapingStage || 'Processing...'}
@@ -657,7 +750,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {loading && (
+          {isLoading && (
             <Card className="bg-white border-none shadow-sm overflow-hidden max-w-2xl mx-auto">
               <CardHeader className="text-center">
                 <CardTitle>Analysis in Progress</CardTitle>
@@ -688,7 +781,7 @@ export default function Dashboard() {
             </Card>
           )}
 
-          {!loading && !showAllProfiles && recentProfiles.length > 0 && (
+          {!isLoading && !showAllProfiles && recentProfiles.length > 0 && (
             <div className="space-y-4 sm:space-y-6">
               <h2 className="text-xl sm:text-2xl font-bold text-center">Recent Profiles</h2>
               <div className="space-y-3 sm:space-y-5 max-w-full sm:max-w-4xl mx-auto px-1 sm:px-0">
@@ -762,7 +855,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {!loading && showAllProfiles && (
+          {!isLoading && showAllProfiles && (
             <Card className="bg-white border-none shadow-sm overflow-hidden max-w-full md:max-w-5xl mx-auto">
               <CardHeader className="bg-gradient-to-r from-gray-50 to-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 sm:p-6">
                 <div>
@@ -835,13 +928,27 @@ export default function Dashboard() {
                               <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 uppercase text-[10px] sm:text-xs font-semibold tracking-wider">
                                 {profile.platform === 'instagram' ? 'Instagram' : 'LinkedIn'}
                               </Badge>
+                              
+                              {profile.scrape_status === 'scraping' && (
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1 text-[10px] sm:text-xs">
+                                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                                  Scraping
+                                </Badge>
+                              )}
+                              
+                              {profile.scrape_status === 'failed' && (
+                                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 gap-1 text-[10px] sm:text-xs">
+                                  <X className="h-2.5 w-2.5" />
+                                  Failed
+                                </Badge>
+                              )}
                             </div>
                             <div className="flex items-center gap-x-1.5 text-[10px] sm:text-xs text-gray-500">
                               <Calendar className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-none" />
                               <span>
                                 {profile.last_scraped 
                                   ? `Updated ${formatDistanceToNow(new Date(profile.last_scraped), { addSuffix: true })}` 
-                                  : 'Not yet analyzed'}
+                                  : 'Never scraped'}
                               </span>
                             </div>
                           </div>
