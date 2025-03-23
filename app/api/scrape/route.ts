@@ -13,46 +13,6 @@ const supabase = createClient(
   }
 )
 
-// New route for polling scrape status
-export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const profileId = url.searchParams.get('profileId');
-  
-  if (!profileId) {
-    return NextResponse.json(
-      { error: 'Profile ID is required' },
-      { status: 400 }
-    );
-  }
-  
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, scrape_status, scrape_error, last_scraped, is_stats_generating')
-      .eq('id', profileId)
-      .single();
-      
-    if (error) {
-      console.error('Error fetching profile status:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch profile status' },
-        { status: 500 }
-      );
-    }
-    
-    return NextResponse.json({
-      success: true,
-      profile: data
-    });
-  } catch (error) {
-    console.error('Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to check profile status' },
-      { status: 500 }
-    );
-  }
-}
-
 export async function POST(request: Request) {
   try {
     const { platform, username, profileId } = await request.json()
