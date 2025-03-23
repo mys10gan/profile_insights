@@ -250,7 +250,7 @@ export async function analyzeProfile(platform: string, profileData: string) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        "model": "google/gemini-2.0-flash-001",
+        "model": "anthropic/claude-3.7-sonnet",
         "messages": messages,
       })
     });
