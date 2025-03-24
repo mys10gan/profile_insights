@@ -23,6 +23,10 @@ import {
   Send,
   BarChart2,
   Download,
+  Trash,
+  MoreVertical,
+  X,
+  History,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -33,6 +37,22 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Message {
   id: string;
@@ -82,6 +102,10 @@ export default function Chat() {
   const { toast } = useToast();
   const router = useRouter();
   const { user } = useSupabase();
+  const [messageToDelete, setMessageToDelete] = useState<Message | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteType, setDeleteType] = useState<"message" | "conversation">("message");
+  const [deleteInProgress, setDeleteInProgress] = useState(false);
 
   // Platform-specific welcome messages
   const getWelcomeMessage = (
@@ -289,16 +313,37 @@ export default function Chat() {
 
       const data = await response.json();
 
+      console.log("Received response from AI API", data);
+
       // Add AI response to the messages
       const aiMessage = {
-        id: data.id || `ai-${Date.now()}`,
+        id: `ai-${Date.now()}`,
         conversation_id: conversationId,
         role: "assistant" as const,
-        content: data.reply || data.content,
+        content: data.message,
         created_at: new Date().toISOString(),
       };
 
-      setMessages((prev) => [...prev, aiMessage]);
+      // Save AI message to the database
+      const { data: savedAiMessage, error: aiSaveError } = await supabase
+        .from("messages")
+        .insert([
+          {
+            conversation_id: conversationId,
+            role: "assistant",
+            content: data.message,
+          },
+        ])
+        .select()
+        .single();
+
+      if (aiSaveError) {
+        console.error("Error saving AI message:", aiSaveError);
+        throw aiSaveError;
+      }
+
+      // Update messages with the saved AI message
+      setMessages((prev) => [...prev, savedAiMessage]);
     } catch (error) {
       console.error("Error in chat submission:", error);
       toast({
@@ -313,6 +358,8 @@ export default function Chat() {
   };
 
   const formatAIResponse = (text: string) => {
+
+    console.log("Recieved response from AI", text);
     // Format links with markdown
     return (
       <div className="prose prose-sm max-w-none">
@@ -438,26 +485,8 @@ export default function Chat() {
     if (!user || !profile) return;
 
     try {
-      // Create a new conversation
-      const { data, error } = await supabase
-        .from("conversations")
-        .insert([
-          {
-            user_id: user.id,
-            profile_id: profileId,
-            created_at: new Date().toISOString(),
-          },
-        ])
-        .select();
-
-      if (error) {
-        console.error("Error creating new conversation:", error);
-        throw error;
-      }
-
-      if (data && data.length > 0) {
-        router.push(`/chat/${profileId}/${data[0].id}`);
-      }
+      // Navigate to the profile page to create a new conversation
+      router.push(`/chat/${profileId}`);
     } catch (error) {
       console.error("Error starting new chat:", error);
       toast({
@@ -501,6 +530,111 @@ export default function Chat() {
         description: "Failed to export chat",
       });
     }
+  };
+
+  // Handle message deletion
+  const handleDeleteMessage = async () => {
+    if (!messageToDelete) return;
+    
+    try {
+      setDeleteInProgress(true);
+      
+      // Delete message from database
+      const { error } = await supabase
+        .from("messages")
+        .delete()
+        .eq("id", messageToDelete.id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Update UI
+      setMessages(messages.filter(msg => msg.id !== messageToDelete.id));
+      toast({
+        title: "Message deleted",
+        description: "The message has been deleted successfully",
+      });
+      
+      // Update cache
+      if (profile) {
+        sessionStorage.setItem(
+          `chat_${profileId}_${conversationId}`,
+          JSON.stringify({
+            profile,
+            messages: messages.filter(msg => msg.id !== messageToDelete.id),
+          })
+        );
+      }
+    } catch (error) {
+      console.error("Error deleting message:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete message. Please try again.",
+      });
+    } finally {
+      setDeleteInProgress(false);
+      setDeleteDialogOpen(false);
+      setMessageToDelete(null);
+    }
+  };
+  
+  // Handle conversation deletion
+  const handleDeleteConversation = async () => {
+    try {
+      setDeleteInProgress(true);
+      
+      // Delete all messages first (due to foreign key constraint)
+      const { error: messagesError } = await supabase
+        .from("messages")
+        .delete()
+        .eq("conversation_id", conversationId);
+        
+      if (messagesError) {
+        throw messagesError;
+      }
+      
+      // Then delete the conversation
+      const { error: conversationError } = await supabase
+        .from("conversations")
+        .delete()
+        .eq("id", conversationId);
+        
+      if (conversationError) {
+        throw conversationError;
+      }
+      
+      toast({
+        title: "Conversation deleted",
+        description: "The conversation has been deleted successfully",
+      });
+      
+      // Clear cache
+      sessionStorage.removeItem(`chat_${profileId}_${conversationId}`);
+      
+      // Redirect to chats page
+      router.push("/chats");
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete conversation. Please try again.",
+      });
+    } finally {
+      setDeleteInProgress(false);
+      setDeleteDialogOpen(false);
+    }
+  };
+  
+  // Function to open delete dialog
+  const openDeleteDialog = (type: "message" | "conversation", message?: Message) => {
+    setDeleteType(type);
+    if (type === "message" && message) {
+      setMessageToDelete(message);
+    }
+    setDeleteDialogOpen(true);
   };
 
   // Loading state UI
@@ -614,6 +748,16 @@ export default function Chat() {
             variant="outline"
             size="sm"
             className="gap-1 border-gray-200 h-8 text-xs sm:text-sm rounded-full"
+            onClick={() => router.push("/chats")}
+          >
+            <History className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">History</span>
+            <span className="xs:hidden">Past</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1 border-gray-200 h-8 text-xs sm:text-sm rounded-full"
             onClick={exportChat}
           >
             <Download className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -628,6 +772,26 @@ export default function Chat() {
             <BarChart2 className="h-3 w-3 sm:h-4 sm:w-4" />
             <span className="hidden xs:inline">Analysis</span>
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-gray-200 h-8 w-8 p-0 rounded-full"
+              >
+                <MoreVertical className="h-3.5 w-3.5 text-gray-700" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem 
+                className="text-red-600 cursor-pointer flex items-center gap-2 text-sm"
+                onClick={() => openDeleteDialog("conversation")}
+              >
+                <Trash className="h-4 w-4" />
+                Delete Conversation
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -657,17 +821,28 @@ export default function Chat() {
                     className={`
                       ${
                         message.role === "user"
-                          ? "bg-[#f8f9fa] border border-gray-200 text-gray-800 ml-12"
-                          : "bg-[#f8f9fa] border border-gray-200 text-gray-800"
+                          ? "bg-[#f8f9fa] border border-gray-200 text-gray-800 ml-12 group relative"
+                          : "bg-[#f8f9fa] border border-gray-200 text-gray-800 group relative"
                       } rounded-2xl p-4 max-w-[85%] shadow-sm
                     `}
                   >
                     {message.role === "user" ? (
-                      <div className="text-sm">{message.content}</div>
+                      <>
+                        <div className="text-sm">{message.content}</div>
+                        <button 
+                          onClick={() => openDeleteDialog("message", message)}
+                          className="absolute -right-2 -top-2 h-6 w-6 bg-gray-100 rounded-full border border-gray-300 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3 text-gray-600" />
+                        </button>
+                      </>
                     ) : (
-                      <div className="text-sm leading-relaxed text-gray-800">
-                        {formatAIResponse(message.content)}
-                      </div>
+                      <>
+                        <div className="text-sm leading-relaxed text-gray-800">
+                          {formatAIResponse(message.content)}
+                        </div>
+                        {/* Only allow deleting user messages since AI messages depend on context */}
+                      </>
                     )}
                   </div>
                 </div>
@@ -734,6 +909,40 @@ export default function Chat() {
           </div>
         </div>
       </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {deleteType === "message" ? "Delete message?" : "Delete entire conversation?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteType === "message" 
+                ? "This action cannot be undone. The message will be permanently deleted."
+                : "This action cannot be undone. All messages in this conversation will be permanently deleted."
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteInProgress}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={deleteType === "message" ? handleDeleteMessage : handleDeleteConversation}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={deleteInProgress}
+            >
+              {deleteInProgress ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
