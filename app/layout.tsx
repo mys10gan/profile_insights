@@ -10,12 +10,11 @@ const inter = Inter({ subsets: ["latin"] });
 
 
 export const metadata: Metadata = {
-  title: "Insights AI",
+  title: "Torque AI",
   description: "AI-powered social media profile analysis",
   icons: {
     icon: [
-      { url: '/favicon.svg' },
-      { url: '/logo.svg' }
+      { url: '/logo.jpeg' }
     ],
   }
 };

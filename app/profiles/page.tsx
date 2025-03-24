@@ -514,17 +514,6 @@ export default function ProfilesPage() {
                   
                   <div className="flex items-center gap-2 mt-4 sm:mt-0 ml-auto">
                     <HoverCard>
-                      <HoverCardTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="gap-1.5 border-gray-200 text-gray-700 hover:bg-gray-50"
-                          onClick={() => fetchProfileStats(profile.id)}
-                        >
-                          <BarChart className="h-4 w-4" />
-                          Stats
-                        </Button>
-                      </HoverCardTrigger>
                       <HoverCardContent className="w-64 p-4 bg-white shadow-md rounded-xl border-gray-100">
                         {profileStats[profile.id]?.loading ? (
                           <div className="flex items-center justify-center py-4">

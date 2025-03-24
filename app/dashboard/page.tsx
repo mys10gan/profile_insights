@@ -649,7 +649,7 @@ export default function Dashboard() {
       <div className="container mx-auto max-w-6xl p-4 py-8">
         <div className="mb-10">
           <header className="text-center">
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Welcome to Insights AI</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Welcome to Torque AI</h1>
             <p className="text-gray-500 max-w-2xl mx-auto mt-2">Analyze social media profiles to gain insights, understand engagement patterns, and discover growth opportunities.</p>
           </header>
         </div>
@@ -762,7 +762,10 @@ export default function Dashboard() {
                 <h2 className="text-xl sm:text-2xl font-bold">Your Profiles</h2>
                 <Button 
                   variant="outline"
-                  onClick={() => setShowAllProfiles(!showAllProfiles)}
+                  onClick={() => {
+                    // take the user profiles page
+                    router.push('/profiles')
+                  }}
                   className="rounded-full border-gray-200 text-gray-700 px-4 sm:px-6 h-9 sm:h-10 text-sm"
                 >
                   {showAllProfiles ? (
@@ -857,17 +860,6 @@ export default function Dashboard() {
                       
                       <div className="flex items-center gap-2 mt-3 sm:mt-0">
                         <HoverCard>
-                          <HoverCardTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="h-8 gap-1.5 border-gray-200 text-gray-700 hover:bg-gray-50 rounded-full text-xs"
-                              onClick={() => fetchProfileStats(profile.id)}
-                            >
-                              <BarChart className="h-3.5 w-3.5" />
-                              <span className="sm:inline">Stats</span>
-                            </Button>
-                          </HoverCardTrigger>
                           <HoverCardContent className="w-60 p-3 bg-white shadow-md rounded-xl border-gray-100">
                             {profileStats[profile.id]?.loading ? (
                               <div className="flex items-center justify-center py-4">
