@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import SupabaseProvider from "@/components/providers/supabase-provider";
 import { Toaster } from "@/components/ui/toaster";
+import Navbar from "@/components/navbar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -32,6 +33,7 @@ export default function RootLayout({
       )}>
         <main className="relative flex flex-col min-h-screen">
           <SupabaseProvider>
+            <Navbar />
             <div className="flex-grow flex-1">
               {children}
             </div>
