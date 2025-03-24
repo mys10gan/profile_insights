@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/components/providers/supabase-provider";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Loader2,
   ChevronLeft,
@@ -16,14 +15,13 @@ import {
   CalendarClock,
   Code, 
   Copy,
-  Check, 
   RefreshCw,
   Users,
   Heart,
   LineChart,
   TrendingUp,
   Lightbulb,
-  AlertCircle
+  X
 } from "lucide-react";
 import {
   Card,
@@ -34,7 +32,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
 import { useParams } from "next/navigation";
 import { formatTimeAgo, sanitizeUsername } from "@/lib/utils"
 
@@ -54,7 +51,7 @@ interface Profile {
   last_scraped: string;
   stats?: any;
   is_stats_generating?: boolean;
-  scrape_status?: 'pending' | 'scraping' | 'completed' | 'failed';
+  scrape_status: "pending" | "fetching" | "scraping" | "completed" | "failed";
   scrape_error?: string;
 }
 
@@ -63,143 +60,188 @@ export default function Analysis() {
   const id = params.id as string;
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadingStage, setLoadingStage] =
-    useState<string>("Loading profile...");
-  const [activeTab, setActiveTab] = useState("overview");
-  const [showRawJson, setShowRawJson] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [dataState, setDataState] = useState<"loading" | "scraping" | "error" | "empty" | "ready">("loading");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showRawData, setShowRawData] = useState(false);
   const [generatingStats, setGeneratingStats] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
   const { user } = useSupabase();
-  const [scraping, setScraping] = useState(false);
-  const [scrapeError, setScrapeError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  // Simple function to load data, called only once on mount
+  const loadData = useCallback(async () => {
+    if (!id) return;
+
     try {
-      if (!user) return
-
-      // Fetch profile
-      setLoading(true);
-      setLoadingStage("Loading profile information...");
+      // Get profile
       const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", id)
+        .from('profiles')
+        .select('*')
+        .eq('id', id)
         .single();
 
       if (profileError) {
-        console.error("Error fetching profile:", profileError);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load profile information.",
-        });
-        setLoading(false);
+        setDataState("error");
+        setErrorMessage("Profile not found");
         return;
       }
 
-      // Set profile data
       setProfile(profileData);
-      
-      // Update UI based on profile status
-      updateProfileStatusUI(profileData);
 
-      // Fetch raw profile data
-      const { data: profileRawData, error: rawDataError } = await supabase
-        .from("profile_data")
-        .select("*")
-        .eq("profile_id", id)
-        .single();
-
-      if (rawDataError) {
-        console.error("Error fetching raw profile data:", rawDataError);
-      } else {
-        setProfileData(profileRawData);
+      // Handle different profile states
+      if (profileData.scrape_status === "failed") {
+        setDataState("error");
+        setErrorMessage(profileData.scrape_error || "Failed to fetch profile data");
+        return;
       }
 
-      setLoading(false);
-      
-      // Update generatingStats state based on profile status
-      if (profileData.is_stats_generating) {
-        setGeneratingStats(true);
+      if (["pending", "fetching", "scraping"].includes(profileData.scrape_status)) {
+        setDataState("scraping");
+        return;
+      }
+
+      // If completed, get the profile data
+      if (profileData.scrape_status === "completed") {
+        const { data: fullData, error: dataError } = await supabase
+          .from('profile_data')
+          .select('*')
+          .eq('profile_id', id)
+          .single();
+
+        if (dataError) {
+          // No data found even though status is completed
+          if (dataError.code === 'PGRST116') {
+            setDataState("empty");
+            return;
+          }
+          
+          setDataState("error");
+          setErrorMessage("Error fetching profile data");
+          return;
+        }
+
+        setProfileData(fullData);
+        setDataState("ready");
       }
     } catch (error) {
-      console.error("Error loading data:", error);
+      setDataState("error");
+      setErrorMessage("An unexpected error occurred");
+    }
+  }, [id]);
+
+  // Load data once on mount
+  useEffect(() => {
+    loadData();
+    
+    // Set up real-time subscription for status updates
+    if (!id) return;
+    
+    const subscription = supabase
+      .channel(`profile-${id}`)
+      .on('postgres_changes', 
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${id}` }, 
+        (payload) => {
+          const updatedProfile = payload.new as Profile;
+          setProfile(updatedProfile);
+          
+          // If status changed to completed or failed, reload the page
+          if (
+            (updatedProfile.scrape_status === "completed" || updatedProfile.scrape_status === "failed") && 
+            dataState === "scraping"
+          ) {
+            window.location.reload();
+          }
+        })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [id, loadData, dataState]);
+
+  // Handle manual refresh
+  const handleRefresh = () => {
+    window.location.reload();
+  };
+
+  // Generate stats
+  const generateStats = async () => {
+    if (!user || !id) return;
+    
+    try {
+      setGeneratingStats(true);
+      
+      const response = await fetch(
+        `/api/generate-stats?profileId=${id}&userId=${user.id}`
+      );
+      
+      if (!response.ok) {
+        throw new Error("Failed to generate stats");
+      }
+      
+      window.location.reload();
+    } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to load profile data.",
+        description: "Failed to generate profile stats"
       });
-      setLoading(false);
+    } finally {
       setGeneratingStats(false);
     }
-  }, [id, user, toast]);
+  };
 
-  // Helper function to update UI based on profile status
-  const updateProfileStatusUI = useCallback((profile: Profile) => {
-    if (profile.scrape_status === 'scraping' || profile.scrape_status === 'pending') {
-      setScraping(true);
-      setScrapeError(null);
-      setLoadingStage(`Fetching profile data... (${new Date().toLocaleTimeString()})`);
-    } 
-    else if (profile.scrape_status === 'failed') {
-      setScraping(false);
-      setScrapeError(profile.scrape_error || 'Failed to fetch profile data');
+  // Copy raw data to clipboard
+  const copyToClipboard = () => {
+    if (profileData) {
+      navigator.clipboard.writeText(
+        JSON.stringify(profileData.raw_data, null, 2)
+      );
+      toast({
+        title: "Copied to clipboard",
+        description: "Raw JSON data has been copied"
+      });
     }
-    else if (profile.scrape_status === 'completed') {
-      setScraping(false);
-      setScrapeError(null);
-      
-      // Update generatingStats based on profile data
-      setGeneratingStats(!!profile.is_stats_generating);
-    }
-  }, [setScraping, setScrapeError, setLoadingStage, setGeneratingStats]);
+  };
 
-  useEffect(() => {
-    if (!id) return;
+  // Get loading message based on status
+  const getLoadingMessage = () => {
+    if (!profile) return "Loading profile...";
     
-    fetchData();
+    switch(profile.scrape_status) {
+      case 'pending':
+        return 'Preparing to fetch profile data. This will take about 7-10 minutes.';
+      case 'fetching':
+        return 'Fetching profile data. This will take about 7-10 minutes.';
+      case 'scraping':
+        return 'Processing scraped data...';
+      default:
+        return 'Loading profile data...';
+    }
+  };
 
-    // Set up Supabase real-time subscription to profile changes
-    const profilesSubscription = supabase
-      .channel('profile-updates-' + id)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles',
-          filter: `id=eq.${id}`
-        },
-        (payload) => {
-          // Update profile data with latest changes
-          const updatedProfile = payload.new as Profile;
-          setProfile((prev: Profile | null) => prev ? { ...prev, ...updatedProfile } : updatedProfile);
-          
-          // Update UI based on profile status changes
-          updateProfileStatusUI(updatedProfile);
-          
-          // If fetching completed, refresh the full data
-          if (updatedProfile.scrape_status === 'completed' && !updatedProfile.is_stats_generating) {
-            fetchData();
-          }
-        }
-      )
-      .subscribe();
+  // Format numbers with K/M suffix
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+  };
 
-    // Cleanup subscription on unmount
-    return () => {
-      profilesSubscription.unsubscribe();
-    };
-  }, [id, fetchData, updateProfileStatusUI, setProfile, supabase]);
+  // Format engagement rate as percentage
+  const formatEngagementRate = (rate: number) => {
+    return (rate * 100).toFixed(2) + '%';
+  };
 
-  // Map profileAnalysis format to expected format if needed
+  // Get formatted username
+  const displayUsername = useMemo(() => {
+    if (!profile?.username) return '';
+    return sanitizeUsername(profile.username, profile.platform);
+  }, [profile?.username, profile?.platform]);
+
+  // Format stats for display
   const formattedStats = useMemo(() => {
     if (!profile?.stats) return null;
     
-    // If stats has profileAnalysis structure, transform it to the expected format
     if (profile.stats.profileAnalysis) {
       return {
         audienceMetrics: profile.stats.profileAnalysis.audienceMetrics || {},
@@ -211,15 +253,13 @@ export default function Analysis() {
       };
     }
     
-    // Return the original stats if already in expected format
     return profile.stats;
   }, [profile?.stats]);
 
-  // Get platform-specific tab and metric section names
+  // Platform-specific UI elements
   const getPlatformSpecificUI = useMemo(() => {
     if (!profile) return null;
     
-    // Default tabs for both platforms
     const baseTabs = {
       overview: "Overview",
       performance: "Performance",
@@ -261,7 +301,6 @@ export default function Analysis() {
         }
       };
     } else {
-      // LinkedIn-specific UI elements
       return {
         tabs: {
           ...baseTabs,
@@ -293,86 +332,12 @@ export default function Analysis() {
     }
   }, [profile]);
 
-  // Ensure loading state is properly managed
-  useEffect(() => {
-    if (profile && !profile.is_stats_generating) {
-      setGeneratingStats(false);
-    }
-  }, [profile]);
-
-  // New helper function to generate stats
-  const generateStats = async () => {
-    try {
-      setGeneratingStats(true);
-      setLoadingStage("Initiating profile analysis...");
-
-      // Call API to generate stats
-      const response = await fetch(
-        `/api/generate-stats?profileId=${id}&userId=${user!.id}`
-      );
-      
-      if (!response.ok) {
-        throw new Error("Failed to generate stats. Please try again.");
-      }
-      
-      // Refetch data to get the updated stats
-      await fetchData();
-      
-      toast({
-        title: "Stats generated",
-        description: "Profile insights have been generated successfully.",
-        variant: "success",
-      });
-    } catch (error) {
-      console.error("Error generating stats:", error);
-      
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to generate profile stats. Please try again.",
-      });
-    } finally {
-      setGeneratingStats(false);
-    }
+  // Helper to check if platform is Instagram
+  const isInstagramProfile = (platform?: string): boolean => {
+    return platform === 'instagram';
   };
 
-  const copyToClipboard = () => {
-    if (profileData) {
-      navigator.clipboard.writeText(
-        JSON.stringify(profileData.raw_data, null, 2)
-      );
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      toast({
-        title: "Copied to clipboard",
-        description: "Raw JSON data has been copied to your clipboard",
-      });
-    }
-  };
-
-  // Format numbers with K/M suffix
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + 'M';
-    }
-    if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'K';
-    }
-    return num.toString();
-  };
-
-  // Format engagement rate as percentage
-  const formatEngagementRate = (rate: number) => {
-    return (rate * 100).toFixed(2) + '%';
-  };
-
-  // Update to use the shared sanitizeUsername utility
-  const displayUsername = useMemo(() => {
-    if (!profile?.username) return '';
-    return sanitizeUsername(profile.username, profile.platform);
-  }, [profile?.username, profile?.platform]);
-
-  // Helper function to render Instagram stats card
+  // Simple helper for Instagram stats cards
   const renderInstagramStatsCard = (title: string, stats: Record<string, number | string>) => {
     if (!stats) return null;
 
@@ -393,8 +358,8 @@ export default function Analysis() {
       </div>
     );
   };
-
-  // Modify the TabsContent for Instagram-specific view
+  
+  // Render Instagram-specific content
   const renderInstagramContent = () => {
     if (!profile || profile.platform !== 'instagram' || !formattedStats) return null;
 
@@ -503,52 +468,49 @@ export default function Analysis() {
     );
   };
 
-  // Helper function to check if platform is Instagram
-  const isInstagramProfile = (platform?: string): boolean => {
-    return platform === 'instagram';
-  };
-
-  if (loading) {
+  // RENDER DIFFERENT UI STATES
+  
+  // Loading state
+  if (dataState === "loading") {
     return (
-      <div className="container mx-auto max-w-6xl p-4 py-8">
-        <div className="mb-8">
-          <Skeleton className="h-10 w-3/4 mb-2" />
-          <Skeleton className="h-6 w-1/2" />
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <h2 className="text-2xl font-bold">Loading profile data...</h2>
         </div>
+      </div>
+    );
+  }
 
-        <div className="flex items-center justify-center mb-8">
-          <div className="flex items-center gap-2 text-lg text-gray-600">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            {loadingStage}
+  // Scraping state
+  if (dataState === "scraping") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
+        <div className="flex flex-col items-center space-y-8 max-w-lg">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold">{getLoadingMessage()}</h2>
+            <p className="text-muted-foreground">
+              This process typically takes 7-10 minutes. You can close this page and come back later.
+            </p>
           </div>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="rounded-lg border p-6">
-            <Skeleton className="h-8 w-1/2 mb-4" />
-            <div className="space-y-4">
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
+          
+          <div className="space-y-4 w-full">
+            <div className="flex justify-center">
+              <Button 
+                variant="outline" 
+                className="gap-2" 
+                onClick={handleRefresh}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh to check progress
+              </Button>
             </div>
-          </div>
-
-          <div className="rounded-lg border p-6">
-            <Skeleton className="h-8 w-1/2 mb-4" />
-            <div className="space-y-4">
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
-            </div>
-          </div>
-
-          <div className="rounded-lg border p-6">
-            <Skeleton className="h-8 w-1/2 mb-4" />
-            <div className="space-y-4">
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
+            
+            <div className="text-sm text-muted-foreground">
+              <p>You don't need to keep this page open.</p>
+              <p>Feel free to come back later and check progress.</p>
             </div>
           </div>
         </div>
@@ -556,58 +518,20 @@ export default function Analysis() {
     );
   }
 
-  if (scraping) {
+  // Error state
+  if (dataState === "error") {
     return (
-      <div className="container mx-auto max-w-6xl p-4 py-8">
-        <div className="mb-8">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push("/dashboard")}
-            className="border-gray-200 mb-4 sm:mb-6 text-xs sm:text-sm h-8 sm:h-9"
-          >
-            <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-            Back to Dashboard
-          </Button>
-        </div>
-
-        <div className="min-h-[300px] flex flex-col items-center justify-center gap-3 my-8 text-gray-500 dark:text-gray-400">
-          <Loader2 className="h-10 w-10 animate-spin" />
-          <h3 className="text-xl font-medium">Fetching profile data...</h3>
-          <p className="text-sm text-center max-w-md">
-            This could take up to 3 minutes. The page will update automatically when ready.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (scrapeError) {
-    return (
-      <div className="container mx-auto max-w-6xl p-4 py-8">
-        <div className="mb-8">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push("/dashboard")}
-            className="border-gray-200 mb-4 sm:mb-6 text-xs sm:text-sm h-8 sm:h-9"
-          >
-            <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-            Back to Dashboard
-          </Button>
-        </div>
-
-        <div className="flex flex-col items-center justify-center gap-4 py-6 sm:py-10 mb-4 sm:mb-6 bg-white border border-dashed border-red-100 rounded-lg shadow-sm">
-          <div className="rounded-full bg-red-50 p-4 sm:p-6">
-            <AlertCircle className="h-8 w-8 sm:h-10 sm:w-10 text-red-500" />
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4 p-8 max-w-2xl">
+          <div className="h-24 w-24 mx-auto flex items-center justify-center rounded-full bg-red-100">
+            <X className="h-12 w-12 text-red-600" />
           </div>
-          <h2 className="text-lg sm:text-xl font-semibold text-red-600">Profile Data Fetch Failed</h2>
-          <p className="text-gray-700 max-w-md text-center text-sm sm:text-base px-4 sm:px-0">
-            {scrapeError}
-          </p>
+          <h2 className="text-2xl font-bold text-red-600">Error Loading Profile</h2>
+          <p className="text-gray-600">{errorMessage || "An error occurred while loading the profile"}</p>
           <Button 
+            onClick={() => router.push('/dashboard')}
+            className="mt-4"
             variant="outline"
-            onClick={() => router.push("/dashboard")}
           >
             Return to Dashboard
           </Button>
@@ -616,18 +540,30 @@ export default function Analysis() {
     );
   }
 
-  if (!profile) {
+  // Empty data state
+  if (dataState === "empty") {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-lg">
-          Profile not found or analysis not yet complete
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4 p-8">
+          <h2 className="text-2xl font-bold">No Profile Data</h2>
+          <p className="text-gray-600">We couldn't find data for this profile. It may need to be re-scraped.</p>
+          <div className="flex justify-center gap-2 mt-6">
+            <Button
+              onClick={() => router.push('/dashboard')}
+              variant="outline"
+            >
+              Return to Dashboard
+            </Button>
+            <Button onClick={handleRefresh}>
+              Try Again
+            </Button>
+          </div>
         </div>
       </div>
     );
   }
 
-  console.log(profileData?.scraped_at);
-
+  // Main profile view
   return (
     <div className="container mx-auto max-w-6xl p-4 py-6 sm:py-8">
       <div className="mb-4 sm:mb-6">
@@ -644,7 +580,7 @@ export default function Analysis() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 sm:gap-6 bg-white rounded-lg border border-gray-100 shadow-sm p-4 sm:p-6">
           <div className="flex items-start gap-3 sm:gap-4">
             <div className="flex h-10 w-10 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full bg-gray-100">
-              {profile.platform === "instagram" ? (
+              {profile?.platform === "instagram" ? (
                 <Instagram className="h-5 w-5 sm:h-7 sm:w-7 text-gray-700" />
               ) : (
                 <Linkedin className="h-5 w-5 sm:h-7 sm:w-7 text-gray-700" />
@@ -657,7 +593,7 @@ export default function Analysis() {
                   variant="outline"
                   className="bg-gray-50 text-gray-700 border-gray-200 text-xs"
                 >
-                  {profile.platform === "instagram" ? "Instagram" : "LinkedIn"}
+                  {profile?.platform === "instagram" ? "Instagram" : "LinkedIn"}
                 </Badge>
               </div>
               <p className="text-gray-500 mt-1 flex items-center gap-1 text-xs sm:text-sm">
@@ -689,10 +625,10 @@ export default function Analysis() {
               variant="outline"
               size="sm"
               className="gap-1 sm:gap-2 border-gray-200 text-xs sm:text-sm h-8 sm:h-9"
-              onClick={() => setShowRawJson(!showRawJson)}
+              onClick={() => setShowRawData(!showRawData)}
             >
               <Code className="h-3 w-3 sm:h-4 sm:w-4" />
-              {showRawJson ? "Hide" : "Show"} Raw Data
+              {showRawData ? "Hide" : "Show"} Raw Data
             </Button>
             <Button 
               className="gap-1 sm:gap-2 text-xs sm:text-sm h-8 sm:h-9" 
@@ -721,7 +657,7 @@ export default function Analysis() {
         </div>
       )}
 
-      {showRawJson && (
+      {showRawData && (
         <Card className="mb-6 sm:mb-8 border border-gray-100 shadow-sm">
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6">
             <div>
@@ -731,12 +667,8 @@ export default function Analysis() {
               </CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={copyToClipboard} className="mt-2 sm:mt-0 self-end sm:self-auto">
-              {copied ? (
-                <Check className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-              ) : (
-                <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-              )}
-              {copied ? "Copied" : "Copy"}
+              <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              Copy
             </Button>
           </CardHeader>
           <CardContent className="p-0 sm:p-4">
@@ -749,7 +681,7 @@ export default function Analysis() {
         </Card>
       )}
 
-      {formattedStats && (
+      {formattedStats ? (
         <Tabs defaultValue="overview" className="w-full">
           <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
             <TabsList className="mb-4 sm:mb-6 flex w-max min-w-full p-1 bg-gray-50 rounded-md">
@@ -1099,9 +1031,7 @@ export default function Analysis() {
             </div>
           </TabsContent>
         </Tabs>
-      )}
-
-      {!formattedStats && !generatingStats && (
+      ) : (
         <div className="flex flex-col items-center justify-center gap-4 sm:gap-6 py-10 sm:py-16 bg-white border border-dashed border-gray-100 rounded-lg shadow-sm">
           <div className="rounded-full bg-gray-50 p-4 sm:p-6">
             <BarChart3 className="h-8 w-8 sm:h-10 sm:w-10 text-gray-500" />
