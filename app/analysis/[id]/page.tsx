@@ -13,8 +13,6 @@ import {
   Instagram,
   Linkedin, 
   CalendarClock,
-  Code, 
-  Copy,
   RefreshCw,
   Users,
   Heart,
@@ -62,7 +60,6 @@ export default function Analysis() {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [dataState, setDataState] = useState<"loading" | "scraping" | "error" | "empty" | "ready">("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showRawData, setShowRawData] = useState(false);
   const [generatingStats, setGeneratingStats] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
@@ -212,19 +209,6 @@ export default function Analysis() {
       }
     } finally {
       setGeneratingStats(false);
-    }
-  };
-
-  // Copy raw data to clipboard
-  const copyToClipboard = () => {
-    if (profileData) {
-      navigator.clipboard.writeText(
-        JSON.stringify(profileData.raw_data, null, 2)
-      );
-      toast({
-        title: "Copied to clipboard",
-        description: "Raw JSON data has been copied"
-      });
     }
   };
 
@@ -497,10 +481,38 @@ export default function Analysis() {
   // Loading state
   if (dataState === "loading") {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <h2 className="text-2xl font-bold">Loading profile data...</h2>
+      <div className="container mx-auto max-w-5xl p-4 py-8 animate-in fade-in duration-300">
+        <div className="mb-8">
+          <div className="flex items-center mb-4">
+            <div className="h-8 w-8 shimmer rounded-full mr-2"></div>
+            <div className="h-5 w-32 shimmer rounded"></div>
+          </div>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white rounded-lg border border-gray-100 shadow-sm p-4 sm:p-6">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="h-12 w-12 sm:h-14 sm:w-14 shimmer rounded-full"></div>
+              <div className="space-y-2">
+                <div className="h-7 w-48 shimmer rounded"></div>
+                <div className="h-4 w-36 shimmer rounded"></div>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-2 md:mt-0">
+              <div className="h-8 w-32 shimmer rounded"></div>
+              <div className="h-8 w-32 shimmer rounded"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="h-10 w-full shimmer rounded mb-6"></div>
+        
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2">
+          <div className="h-64 shimmer rounded border border-gray-100 shadow-sm"></div>
+          <div className="h-64 shimmer rounded border border-gray-100 shadow-sm"></div>
+        </div>
+        
+        <div className="absolute inset-x-0 bottom-0 flex justify-center p-4">
+          <p className="text-gray-500 text-sm bg-white/80 px-3 py-1 rounded-full shadow-sm">
+            Loading profile data...
+          </p>
         </div>
       </div>
     );
@@ -645,17 +657,8 @@ export default function Analysis() {
               )}
               Refresh Analysis
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1 sm:gap-2 border-gray-200 text-xs sm:text-sm h-8 sm:h-9"
-              onClick={() => setShowRawData(!showRawData)}
-            >
-              <Code className="h-3 w-3 sm:h-4 sm:w-4" />
-              {showRawData ? "Hide" : "Show"} Raw Data
-            </Button>
             <Button 
-              className="gap-1 sm:gap-2 text-xs sm:text-sm h-8 sm:h-9" 
+              className="gap-1 sm:gap-2 text-xs sm:text-sm h-8 sm:h-9 bg-gray-900 text-white border-gray-200 hover:bg-gray-800 hover:border-gray-300 "
               onClick={() => router.push(`/chat/${id}`)}
             >
               <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -679,30 +682,6 @@ export default function Analysis() {
             Please don't leave this page while the analysis is running.
           </p>
         </div>
-      )}
-
-      {showRawData && (
-        <Card className="mb-6 sm:mb-8 border border-gray-100 shadow-sm">
-          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6">
-            <div>
-              <CardTitle className="text-base sm:text-lg">Raw JSON Data</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                Complete scraped data for analysis
-              </CardDescription>
-            </div>
-            <Button variant="outline" size="sm" onClick={copyToClipboard} className="mt-2 sm:mt-0 self-end sm:self-auto">
-              <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-              Copy
-            </Button>
-          </CardHeader>
-          <CardContent className="p-0 sm:p-4">
-            <div className="bg-gray-50 p-3 sm:p-4 rounded-none sm:rounded-md overflow-auto max-h-60 sm:max-h-96 text-[10px] sm:text-xs">
-              <pre className="text-gray-800">
-                {JSON.stringify(profileData?.raw_data || {}, null, 2)}
-              </pre>
-            </div>
-          </CardContent>
-        </Card>
       )}
 
       {formattedStats ? (
