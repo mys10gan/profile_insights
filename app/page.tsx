@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 
 export default function Home() {
@@ -53,17 +54,26 @@ export default function Home() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24 bg-white">
+    <div className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24 bg-gradient-to-b from-white to-gray-50">
       <div className="max-w-3xl text-center">
-        <h1 className="mb-4 text-4xl font-bold tracking-tight md:text-6xl">
+        <div className="flex justify-center mb-6">
+          <Image 
+            src="/logo.jpeg" 
+            alt="Torque AI Logo" 
+            width={120} 
+            height={120}
+            className="rounded-full shadow-md" 
+          />
+        </div>
+        <h1 className="mb-4 text-4xl font-bold tracking-tight md:text-6xl bg-clip-text text-transparent bg-gradient-to-r from-gray-800 to-black">
           Torque AI
         </h1>
-        <p className="mb-8 text-lg text-gray-500 md:text-xl">
+        <p className="mb-8 text-lg text-gray-600 md:text-xl max-w-2xl mx-auto">
           Chat with any social media profile and gain valuable insights. Learn from the best in the business.
         </p>
         
         <div className="mx-auto max-w-md space-y-8">
-          <Card className="p-6 border border-gray-100 shadow-sm">
+          <Card className="p-6 border border-gray-100 shadow-lg rounded-xl bg-white">
             <h2 className="mb-4 text-2xl font-semibold">Join Waitlist</h2>
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <input
@@ -72,12 +82,12 @@ export default function Home() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
-                className="w-full rounded-lg border border-gray-200 px-4 py-3 focus:border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-300"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-400"
               />
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full"
+                className="w-full rounded-xl text-base text-white py-6 bg-black hover:bg-gray-800 transition-all transform hover:scale-105"
                 variant="default"
               >
                 {loading ? 'Joining...' : 'Join Waitlist'}
@@ -85,35 +95,38 @@ export default function Home() {
             </form>
           </Card>
 
-          <Card className="p-6 border border-gray-100 shadow-sm">
+          <Card className="p-6 border border-gray-100 shadow-lg rounded-xl bg-white">
             <h2 className="mb-4 text-2xl font-semibold">Already Confirmed?</h2>
-            <p className="mb-4 text-gray-500">
+            <p className="mb-4 text-gray-600">
               If you've received your confirmation email, you can sign in to your account.
             </p>
-            <Link href="/login">
-              <Button className="w-full border-gray-200" variant="outline">
+            <Link href="/login" className="w-full">
+              <Button 
+                className="w-full border border-gray-300 rounded-xl text-base py-6 hover:bg-gray-100 transition-all transform hover:scale-105" 
+                variant="outline"
+              >
                 Sign In
               </Button>
             </Link>
           </Card>
         </div>
 
-        <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-3">
-          <div>
+        <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-3">
+          <div className="p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-all">
             <h3 className="mb-2 text-lg font-semibold">Instagram Analysis</h3>
-            <p className="text-gray-500">
+            <p className="text-gray-600">
               Understand what makes successful Instagram profiles tick.
             </p>
           </div>
-          <div>
+          <div className="p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-all">
             <h3 className="mb-2 text-lg font-semibold">LinkedIn Insights</h3>
-            <p className="text-gray-500">
+            <p className="text-gray-600">
               Learn from top professionals and industry leaders.
             </p>
           </div>
-          <div>
+          <div className="p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-all">
             <h3 className="mb-2 text-lg font-semibold">AI-Powered Chat</h3>
-            <p className="text-gray-500">
+            <p className="text-gray-600">
               Get personalized insights through natural conversation.
             </p>
           </div>

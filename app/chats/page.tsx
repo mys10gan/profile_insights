@@ -414,7 +414,7 @@ export default function ChatsPage() {
                   "You don't have any conversations yet. Start by analyzing a profile."}
               </p>
               {!searchQuery && (
-                <Button onClick={() => router.push('/dashboard')}>
+                <Button onClick={() => router.push('/dashboard')} variant="outline">
                   Go to Dashboard
                 </Button>
               )}

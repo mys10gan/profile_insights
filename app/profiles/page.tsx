@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSupabase } from '@/components/providers/supabase-provider'
 import { useToast } from '@/components/ui/use-toast'
@@ -90,6 +90,7 @@ export default function ProfilesPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeletingProfile, setIsDeletingProfile] = useState(false)
   const [deleteProgress, setDeleteProgress] = useState<string | null>(null)
+  const [visibleCardIds, setVisibleCardIds] = useState<Set<string>>(new Set())
   
   const { user } = useSupabase()
   const { toast } = useToast()
@@ -128,8 +129,8 @@ export default function ProfilesPage() {
   }, [user, toast])
 
   // Apply filters when search query, platform, or sortBy change
-  useEffect(() => {
-    if (!profiles.length) return
+  const applyFilters = useCallback(() => {
+    if (!profiles.length) return []
 
     let filtered = [...profiles]
     
@@ -155,11 +156,16 @@ export default function ProfilesPage() {
       filtered.sort((a, b) => a.platform.localeCompare(b.platform))
     }
     
-    setFilteredProfiles(filtered)
+    return filtered
   }, [searchQuery, platform, sortBy, profiles])
 
+  useEffect(() => {
+    const filteredResult = applyFilters()
+    setFilteredProfiles(filteredResult)
+  }, [applyFilters])
+
   // Function to fetch profile stats for a specific profile
-  const fetchProfileStats = async (profileId: string) => {
+  const fetchProfileStats = useCallback(async (profileId: string) => {
     if (profileStats[profileId] && !profileStats[profileId].loading) {
       return; // Already loaded
     }
@@ -213,7 +219,59 @@ export default function ProfilesPage() {
     } catch (error) {
       console.error('Error processing profile stats:', error);
     }
-  };
+  }, [profiles, profileStats]);
+
+  // Observe when a card becomes visible and load its stats
+  useEffect(() => {
+    if (!isLoading && visibleCardIds.size > 0) {
+      const loadStats = async () => {
+        for (const profileId of visibleCardIds) {
+          if (!profileStats[profileId] || (profileStats[profileId] && !profileStats[profileId].loading)) {
+            await fetchProfileStats(profileId);
+          }
+        }
+      };
+      
+      loadStats();
+    }
+  }, [visibleCardIds, isLoading, fetchProfileStats, profileStats]);
+
+  // Create an intersection observer to detect when profiles come into view
+  useEffect(() => {
+    if (isLoading) return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleIds = new Set(visibleCardIds);
+        
+        entries.forEach(entry => {
+          const profileId = entry.target.getAttribute('data-profile-id');
+          if (profileId) {
+            if (entry.isIntersecting) {
+              visibleIds.add(profileId);
+            } else {
+              visibleIds.delete(profileId);
+            }
+          }
+        });
+        
+        setVisibleCardIds(visibleIds);
+      },
+      {
+        rootMargin: '200px', // Start loading when within 200px of viewport
+        threshold: 0.1
+      }
+    );
+    
+    // Observe all profile cards
+    document.querySelectorAll('[data-profile-id]').forEach(card => {
+      observer.observe(card);
+    });
+    
+    return () => {
+      observer.disconnect();
+    };
+  }, [isLoading, filteredProfiles, visibleCardIds]);
 
   const handleDeleteProfile = async (id: string) => {
     setIsDeletingProfile(true)
@@ -249,32 +307,35 @@ export default function ProfilesPage() {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to fetch conversations associated with this profile.",
+          description: "Failed to find related conversations.",
         })
         return
       }
 
+      // Delete all messages from conversations
       if (conversations && conversations.length > 0) {
-        // Delete messages in those conversations
-        setDeleteProgress(`Deleting ${conversations.length} conversation(s) and messages...`)
-        for (const conv of conversations) {
+        setDeleteProgress('Deleting conversation messages...')
+        const conversationIds = conversations.map(c => c.id)
+        
+        for (const convId of conversationIds) {
           const { error: messagesError } = await supabase
             .from('messages')
             .delete()
-            .eq('conversation_id', conv.id)
+            .eq('conversation_id', convId)
           
           if (messagesError) {
-            console.error('Error deleting messages:', messagesError)
+            console.error('Error deleting messages for conversation:', messagesError)
             toast({
               variant: "destructive",
               title: "Error",
-              description: "Failed to delete some messages.",
+              description: "Failed to delete conversation messages.",
             })
-            // Continue with deletion attempt
+            return
           }
         }
-
-        // Delete the conversations
+        
+        // Now delete the conversations
+        setDeleteProgress('Deleting conversations...')
         const { error: deleteConvError } = await supabase
           .from('conversations')
           .delete()
@@ -291,113 +352,152 @@ export default function ProfilesPage() {
         }
       }
 
-      // Delete the profile
-      setDeleteProgress('Removing profile...')
+      // Finally delete the profile
+      setDeleteProgress('Deleting profile...')
       const { error: profileError } = await supabase
         .from('profiles')
         .delete()
         .eq('id', id)
-        .eq('user_id', user?.id || '') // Safety check to ensure users can only delete their own profiles
-
+      
       if (profileError) {
         console.error('Error deleting profile:', profileError)
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to delete the profile.",
+          description: "Failed to delete profile.",
         })
         return
       }
 
-      // Update the profiles list
-      setProfiles(prevProfiles => prevProfiles.filter(profile => profile.id !== id))
+      // Update the state to remove the deleted profile
+      setProfiles(prevProfiles => prevProfiles.filter(p => p.id !== id))
+      setIsDeleteDialogOpen(false)
       
       toast({
-        title: "Profile deleted",
-        description: "The profile and all associated data have been removed."
+        title: "Success",
+        description: "Profile deleted successfully.",
       })
     } catch (error) {
-      console.error('Error deleting profile:', error)
+      console.error('Error in delete process:', error)
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to delete profile."
+        description: "An unexpected error occurred during deletion.",
       })
     } finally {
       setIsDeletingProfile(false)
-      setDeleteProgress(null)
-      setIsDeleteDialogOpen(false)
       setDeleteProfileId(null)
+      setDeleteProgress(null)
     }
   }
 
   return (
-    <div className="container mx-auto max-w-6xl p-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">My Profiles</h1>
-        <p className="text-gray-500">
-          View and manage all your analyzed social media profiles
-        </p>
-      </div>
-      
-      <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-6">
-        <div className="relative flex-1 max-w-lg">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <Input
-            placeholder="Search profiles..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 border-gray-200 focus:border-gray-300 bg-white"
-          />
-        </div>
-        
-        <div className="flex items-center gap-2">
+    <div className="container max-w-6xl mx-auto px-4 py-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h1 className="text-2xl font-bold tracking-tight">My Profiles</h1>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:flex-none sm:w-64">
+            <Input
+              placeholder="Search profiles..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pr-9 border-gray-200 focus-visible:ring-gray-300"
+            />
+            <Search className="absolute right-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          </div>
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2 border-gray-200">
+              <Button variant="outline" size="icon" className="border-gray-200">
                 <Filter className="h-4 w-4" />
-                Platform
+                <span className="sr-only">Filter</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="min-w-[180px]">
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Platform</DropdownMenuLabel>
               <DropdownMenuRadioGroup value={platform} onValueChange={(value: any) => setPlatform(value)}>
                 <DropdownMenuRadioItem value="all">All Platforms</DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="instagram">Instagram</DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="linkedin">LinkedIn</DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2 border-gray-200">
-                <ArrowUpDown className="h-4 w-4" />
-                Sort
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="min-w-[180px]">
+              
+              <DropdownMenuSeparator />
+              
+              <DropdownMenuLabel>Sort By</DropdownMenuLabel>
               <DropdownMenuRadioGroup value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
                 <DropdownMenuRadioItem value="recent">Most Recent</DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="oldest">Oldest First</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="platform">By Platform</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="platform">Platform</DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
+          
+          <Button
+            onClick={() => router.push('/dashboard')}
+            className="whitespace-nowrap text-sm hidden sm:flex items-center gap-1.5 bg-black text-white hover:bg-gray-800"
+          >
+            <BarChart className="h-4 w-4" />
+            Add Profile
+          </Button>
         </div>
       </div>
+      
+      <Button
+        onClick={() => router.push('/dashboard')}
+        className="whitespace-nowrap mb-5 text-sm flex sm:hidden items-center gap-1.5 bg-black w-full text-white hover:bg-gray-800"
+      >
+        <BarChart className="h-4 w-4" />
+        Add Profile
+      </Button>
+      
+      <Card className="mb-6 border-gray-100">
+        <CardContent className="p-0">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-6 py-5">
+            <div className="space-y-1">
+              <h2 className="font-semibold">Profile Collection</h2>
+              <p className="text-sm text-gray-500">
+                All your analyzed social media profiles appear here
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 text-sm text-gray-500">
+              <span>{filteredProfiles.length} profile{filteredProfiles.length !== 1 ? 's' : ''}</span>
+              {searchQuery && (
+                <Badge variant="outline" className="gap-1 h-7 pl-1.5 pr-2 border-gray-200">
+                  <X 
+                    className="h-3.5 w-3.5 cursor-pointer text-gray-400 hover:text-gray-600" 
+                    onClick={() => setSearchQuery('')}
+                  />
+                  {searchQuery}
+                </Badge>
+              )}
+              {platform !== 'all' && (
+                <Badge variant="outline" className="gap-1 h-7 pl-1.5 pr-2 border-gray-200">
+                  <X 
+                    className="h-3.5 w-3.5 cursor-pointer text-gray-400 hover:text-gray-600" 
+                    onClick={() => setPlatform('all')}
+                  />
+                  {platform === 'instagram' ? 'Instagram' : 'LinkedIn'}
+                </Badge>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <Card key={i} className="border-gray-100">
               <CardContent className="p-6">
-                <div className="flex items-center space-x-4">
-                  <Skeleton className="h-12 w-12 rounded-full" />
-                  <div className="space-y-2 flex-1">
-                    <Skeleton className="h-5 w-[250px]" />
-                    <Skeleton className="h-4 w-[200px]" />
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-5 w-[250px] max-w-full" />
+                      <Skeleton className="h-4 w-[200px] max-w-full" />
+                    </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 justify-end mt-4 sm:mt-0">
                     <Skeleton className="h-9 w-20 rounded-md" />
                     <Skeleton className="h-9 w-20 rounded-md" />
                     <Skeleton className="h-9 w-9 rounded-md" />
@@ -409,52 +509,41 @@ export default function ProfilesPage() {
         </div>
       ) : filteredProfiles.length === 0 ? (
         <Card className="border-gray-100">
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            {searchQuery || platform !== 'all' ? (
-              <>
-                <div className="rounded-full bg-gray-100 p-4 mb-4">
-                  <Search className="h-8 w-8 text-gray-400" />
-                </div>
-                <h3 className="text-xl font-medium mb-2">No matching profiles found</h3>
+          <CardContent className="p-8 text-center">
+            <div className="flex flex-col items-center">
+              <div className="h-14 w-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                <Search className="h-6 w-6 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium mb-1">No profiles found</h3>
+              {searchQuery || platform !== 'all' ? (
                 <p className="text-gray-500 max-w-md">
-                  Try adjusting your search terms or filters to find what you're looking for.
+                  No profiles match your search criteria. Try changing your filters or add a new profile.
                 </p>
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    setSearchQuery('')
-                    setPlatform('all')
-                  }}
-                  className="mt-4 rounded-full"
-                >
-                  Clear Filters
-                </Button>
-              </>
-            ) : (
-              <>
-                <div className="rounded-full bg-gray-100 p-4 mb-4">
-                  <Instagram className="h-8 w-8 text-gray-400" />
-                </div>
-                <h3 className="text-xl font-medium mb-2">No profiles analyzed yet</h3>
+              ) : (
                 <p className="text-gray-500 max-w-md">
-                  Start by analyzing a social media profile to gain insights and performance metrics.
+                  You haven't added any social media profiles yet. Add your first profile to begin analysis.
                 </p>
-                <Button 
-                  onClick={() => router.push('/dashboard')}
-                  className="mt-4 bg-black hover:bg-black/90 rounded-full"
-                >
-                  Analyze a Profile
-                </Button>
-              </>
-            )}
+              )}
+              <Button
+                onClick={() => router.push('/dashboard')}
+                className="mt-6 gap-2 bg-black text-white hover:bg-gray-800"
+              >
+                <BarChart className="h-4 w-4" />
+                Add New Profile
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
           {filteredProfiles.map((profile) => (
-            <Card key={profile.id} className="border-gray-100 hover:border-gray-200 transition-colors">
+            <Card 
+              key={profile.id} 
+              className="border-gray-100 hover:border-gray-200 transition-colors"
+              data-profile-id={profile.id}
+            >
               <CardContent className="p-6">
-                <div className="flex items-center gap-4 flex-wrap sm:flex-nowrap">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     <div className="h-12 w-12 shrink-0 flex items-center justify-center rounded-full bg-gray-100">
                       {profile.platform === 'instagram' ? (
@@ -512,10 +601,38 @@ export default function ProfilesPage() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2 mt-4 sm:mt-0 ml-auto">
+                  <div className="flex items-center gap-2 mt-4 sm:mt-0 ml-0 sm:ml-auto w-full sm:w-auto justify-between sm:justify-end">
                     <HoverCard>
+                      <HoverCardTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => fetchProfileStats(profile.id)}
+                          className="border-gray-200 text-gray-700 hover:bg-gray-50 hidden sm:flex"
+                        >
+                          <BarChart className="h-4 w-4" />
+                          <span className="sr-only">Stats</span>
+                        </Button>
+                      </HoverCardTrigger>
                       <HoverCardContent className="w-64 p-4 bg-white shadow-md rounded-xl border-gray-100">
-                        {profileStats[profile.id]?.loading ? (
+                        {!profileStats[profile.id] ? (
+                          <div className="space-y-3">
+                            <Skeleton className="h-5 w-40" />
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <Skeleton className="h-4 w-20" />
+                                <Skeleton className="h-4 w-10" />
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <Skeleton className="h-4 w-16" />
+                                <Skeleton className="h-4 w-12" />
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <Skeleton className="h-4 w-24" />
+                                <Skeleton className="h-4 w-8" />
+                              </div>
+                            </div>
+                          </div>
+                        ) : profileStats[profile.id]?.loading ? (
                           <div className="flex items-center justify-center py-4">
                             <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
                           </div>
@@ -562,18 +679,18 @@ export default function ProfilesPage() {
                     <Button 
                       variant="outline" 
                       onClick={() => router.push(`/analysis/${profile.id}`)}
-                      className="gap-1.5 border-gray-200 text-gray-700 hover:bg-gray-50"
+                      className="gap-1.5 border-gray-200 text-gray-700 hover:bg-gray-50 flex-1 sm:flex-none justify-center"
                     >
                       <TrendingUp className="h-4 w-4" />
-                      Analysis
+                      <span className="sm:inline">Analysis</span>
                     </Button>
                     <Button 
                       variant="outline" 
                       onClick={() => router.push(`/chat/${profile.id}`)}
-                      className="gap-1.5 border-gray-200 text-gray-700 hover:bg-gray-50"
+                      className="gap-1.5 border-gray-200 text-gray-700 hover:bg-gray-50 flex-1 sm:flex-none justify-center"
                     >
                       <MessageSquare className="h-4 w-4" />
-                      Chat
+                      <span className="sm:inline">Chat</span>
                     </Button>
                     <Button 
                       variant="outline" 
@@ -639,6 +756,13 @@ export default function ProfilesPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <style jsx global>{`
+        @keyframes progress {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
     </div>
   )
 } 
