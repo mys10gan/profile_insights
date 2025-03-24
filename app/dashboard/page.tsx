@@ -111,6 +111,11 @@ export default function Dashboard() {
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null)
   const pollingRef = useRef<boolean>(false)
 
+  // Clear and reset input when platform changes
+  useEffect(() => {
+    setUsername('');
+  }, [platform]);
+
   useEffect(() => {
     if (!user) return
     const fetchRecentProfiles = async () => {
@@ -158,20 +163,92 @@ export default function Dashboard() {
     fetchRecentProfiles()
   }, [user, router, toast])
 
+  // Format username on input change based on platform
+  const handleUsernameChange = (value: string) => {
+    if (platform === 'instagram') {
+      // For Instagram: trim whitespace, optionally strip @ at beginning
+      let formattedValue = value.trim()
+      setUsername(formattedValue)
+    } else {
+      // For LinkedIn: just set the value as is
+      setUsername(value)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate input based on platform
+    if (platform === 'instagram') {
+      // Instagram usernames shouldn't contain URLs or linkedin.com
+      if (username.includes('http') || username.includes('linkedin.com')) {
+        toast({
+          variant: "destructive",
+          title: "Invalid Instagram Username",
+          description: "Please enter a valid Instagram username without URLs or website links.",
+        })
+        return
+      }
+      
+      // Instagram usernames should be alphanumeric with optional underscores and periods
+      // Remove @ if present
+      const cleanUsername = username.startsWith('@') ? username.substring(1) : username
+      if (!/^[a-zA-Z0-9._]{1,30}$/.test(cleanUsername)) {
+        toast({
+          variant: "destructive",
+          title: "Invalid Instagram Username",
+          description: "Instagram usernames should only contain letters, numbers, periods, and underscores.",
+        })
+        return
+      }
+    } else if (platform === 'linkedin') {
+      // LinkedIn should be a URL with the proper format
+      if (!username.includes('linkedin.com/in/')) {
+        toast({
+          variant: "destructive",
+          title: "Invalid LinkedIn URL",
+          description: "Please enter a valid LinkedIn profile URL in the format: https://linkedin.com/in/username",
+        })
+        return
+      }
+      
+      // Basic URL validation
+      try {
+        new URL(username.startsWith('http') ? username : 'https://' + username);
+      } catch (e) {
+        toast({
+          variant: "destructive",
+          title: "Invalid URL Format",
+          description: "Please enter a valid URL for the LinkedIn profile.",
+        })
+        return
+      }
+    }
+    
     setIsLoading(true)
     setScrapingStage('Initializing profile...')
     setScrapingProgress(10)
 
     try {
+      // Clean username for consistent format
+      let cleanedUsername = username
+      if (platform === 'instagram') {
+        // Remove @ if present for Instagram
+        cleanedUsername = username.startsWith('@') ? username.substring(1) : username
+      } else if (platform === 'linkedin') {
+        // Ensure LinkedIn URL is consistent
+        if (!cleanedUsername.startsWith('http')) {
+          cleanedUsername = 'https://' + cleanedUsername
+        }
+      }
+
       // First, check if the profile already exists
       const { data: existingProfile, error: fetchError } = await supabase
         .from('profiles')
         .select('id')
         .eq('user_id', user?.id || '')
         .eq('platform', platform)
-        .eq('username', username)
+        .eq('username', cleanedUsername)
         .single()
 
       let profileId;
@@ -199,7 +276,7 @@ export default function Dashboard() {
           .insert([{
             user_id: user?.id,
             platform,
-            username
+            username: cleanedUsername
           }])
           .select()
           .single()
@@ -212,7 +289,7 @@ export default function Dashboard() {
               .select('id')
               .eq('user_id', user?.id || '')
               .eq('platform', platform)
-              .eq('username', username)
+              .eq('username', cleanedUsername)
               .single()
             
             if (conflictProfile) {
@@ -261,7 +338,7 @@ export default function Dashboard() {
         },
         body: JSON.stringify({
           platform,
-          username,
+          username: cleanedUsername,
           profileId
         }),
       })
@@ -673,20 +750,20 @@ export default function Dashboard() {
                     <Input
                       id="username"
                       value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      placeholder={platform === 'instagram' ? '@username' : 'https://linkedin.com/in/username'}
+                      onChange={(e) => handleUsernameChange(e.target.value)}
+                      placeholder={platform === 'instagram' ? '@username' : 'linkedin.com/in/profilename'}
                       required
                       disabled={isLoading}
-                      className="border-gray-200 pl-10 pr-20 bg-gray-50/50 h-12"
+                      className="border-gray-200 pl-10 pr-28 bg-gray-50/50 h-12"
                     />
-                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-1">
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex space-x-2">
                       <Button
                         type="button"
                         variant={platform === 'instagram' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setPlatform('instagram')}
                         disabled={isLoading}
-                        className={`h-8 px-2 rounded-full ${platform === 'instagram' ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'border-gray-200'}`}
+                        className={`h-8 w-8 p-0 flex items-center justify-center rounded-full ${platform === 'instagram' ? 'bg-gray-200 text-gray-700 hover:bg-gray-300 border-gray-300' : 'border-gray-200'}`}
                       >
                         <Instagram className="h-4 w-4" />
                       </Button>
@@ -696,11 +773,18 @@ export default function Dashboard() {
                         size="sm"
                         onClick={() => setPlatform('linkedin')}
                         disabled={isLoading}
-                        className={`h-8 px-2 rounded-full ${platform === 'linkedin' ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'border-gray-200'}`}
+                        className={`h-8 w-8 p-0 flex items-center justify-center rounded-full ${platform === 'linkedin' ? 'bg-gray-200 text-gray-700 hover:bg-gray-300 border-gray-300' : 'border-gray-200'}`}
                       >
                         <Linkedin className="h-4 w-4" />
                       </Button>
                     </div>
+                  </div>
+                  <div className="pt-1">
+                    <p className="text-xs text-gray-600">
+                      {platform === 'instagram' 
+                        ? "Enter a valid Instagram username (e.g., @username or username)" 
+                        : "Enter a complete LinkedIn profile URL (must include linkedin.com/in/)"}
+                    </p>
                   </div>
                 </div>
 
