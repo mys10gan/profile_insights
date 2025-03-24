@@ -68,7 +68,7 @@ interface Profile {
   id: string;
   platform: "instagram" | "linkedin";
   username: string;
-  scraped_at?: string;
+  created_at?: string;
 }
 
 // Helper function for proxied images
@@ -186,7 +186,7 @@ export default function Chat() {
         // Fetch profile
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
-          .select("id, platform, username, scraped_at")
+          .select("id, platform, username, created_at")
           .eq("id", profileId)
           .single();
 
@@ -765,9 +765,9 @@ export default function Chat() {
               <p className="text-gray-500 mt-0.5 flex items-center gap-1 text-[10px] sm:text-xs">
                 <CalendarClock className="h-3 w-3" />
                 Last updated{" "}
-                {profile.scraped_at
-                  ? formatDistanceToNow(new Date(profile.scraped_at), { addSuffix: true })
-                  : "Never"}
+                {profile.created_at
+                  ? formatDistanceToNow(new Date(profile.created_at), { addSuffix: true })
+                  : 'Unknown'}
               </p>
             </div>
           </div>
