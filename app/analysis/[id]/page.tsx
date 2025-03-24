@@ -122,12 +122,18 @@ export default function Analysis() {
 
         setProfileData(fullData);
         setDataState("ready");
+        
+        // Auto-generate stats if profile is completed but no stats are available
+        if (!profileData.stats && user) {
+          console.log("Profile data fetched successfully but no stats available. Auto-generating stats...");
+          generateStats(false); // Pass false to not show the toast message for auto-generation
+        }
       }
     } catch (error) {
       setDataState("error");
       setErrorMessage("An unexpected error occurred");
     }
-  }, [id]);
+  }, [id, user]);
 
   // Load data once on mount
   useEffect(() => {
@@ -164,8 +170,8 @@ export default function Analysis() {
     window.location.reload();
   };
 
-  // Generate stats
-  const generateStats = async () => {
+  // Generate stats - modified to accept a parameter for showing notifications
+  const generateStats = async (showNotifications = true) => {
     if (!user || !id) return;
     
     try {
@@ -179,13 +185,31 @@ export default function Analysis() {
         throw new Error("Failed to generate stats");
       }
       
-      window.location.reload();
+      // Instead of reloading the page, refetch the profile to get updated stats
+      const { data: updatedProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
+      if (!profileError && updatedProfile) {
+        setProfile(updatedProfile);
+      }
+      
+      if (showNotifications) {
+        toast({
+          title: "Stats generated",
+          description: "Profile insights have been successfully generated"
+        });
+      }
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to generate profile stats"
-      });
+      if (showNotifications) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to generate profile stats"
+        });
+      }
     } finally {
       setGeneratingStats(false);
     }
@@ -611,7 +635,7 @@ export default function Analysis() {
               variant="outline"
               size="sm"
               className="gap-1 sm:gap-2 border-gray-200 text-xs sm:text-sm h-8 sm:h-9"
-              onClick={generateStats}
+              onClick={() => generateStats(true)}
               disabled={generatingStats}
             >
               {generatingStats ? (
@@ -1046,7 +1070,7 @@ export default function Analysis() {
           <Button 
             className="mt-1 sm:mt-2" 
             size="lg"
-            onClick={generateStats}
+            onClick={() => generateStats(true)}
           >
             <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
             Generate Profile Insights
