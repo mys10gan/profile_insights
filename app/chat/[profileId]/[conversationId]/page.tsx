@@ -674,7 +674,7 @@ export default function Chat() {
   // Loading state UI
   if (initialLoading) {
     return (
-      <div className="flex h-screen flex-col bg-white">
+      <div className="flex flex-col h-screen overflow-hidden bg-white">
         <div className="border-b p-3 sm:p-4 flex justify-between items-center bg-white">
           <div className="flex items-center gap-2">
             <div className="h-8 w-20 bg-gradient-to-r from-gray-100 to-gray-200 animate-shimmer rounded-full" />
@@ -686,7 +686,7 @@ export default function Chat() {
           </div>
         </div>
 
-        <div className="flex-1 p-4 sm:p-6">
+        <div className="flex-1 overflow-hidden p-4 sm:p-6">
           <div className="max-w-3xl mx-auto space-y-6">
             <ShimmerMessage />
             <div className="flex justify-end">
@@ -718,7 +718,7 @@ export default function Chat() {
   // Profile not found UI
   if (!profile) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4 overflow-hidden">
         <div className="text-lg sm:text-xl font-medium mb-3 sm:mb-4 text-center">
           Profile not found
         </div>
@@ -741,54 +741,54 @@ export default function Chat() {
   return (
     <div className="flex flex-col h-screen bg-white">
       {/* Fixed Header */}
-      <div className="sticky top-0 z-10 border-b border-gray-100 p-3 sm:p-4 flex justify-between items-center bg-white/95 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
+      <div className="fixed top-0 left-0 right-0 z-20 border-b border-gray-100 py-2 px-3 sm:py-3 sm:px-4 flex justify-between items-center bg-white/95 backdrop-blur-sm chat-header">
+        <div className="flex items-center gap-2 min-w-0">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push("/chats")}
-            className="h-8 sm:h-9 text-sm hover:bg-gray-100 rounded-full px-3 sm:px-4"
+            className="h-8 w-8 sm:h-9 sm:w-9 p-0 text-sm hover:bg-gray-100 rounded-full flex-shrink-0 flex items-center justify-center"
           >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Back
+            <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full bg-gray-100">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100">
               {profile?.platform === "instagram" ? (
-                <Instagram className="h-4 w-4 sm:h-5 sm:w-5 text-gray-700" />
+                <Instagram className="h-4 w-4 text-gray-700" />
               ) : (
-                <Linkedin className="h-4 w-4 sm:h-5 sm:w-5 text-gray-700" />
+                <Linkedin className="h-4 w-4 text-gray-700" />
               )}
             </div>
-            <div>
-              <h1 className="text-sm sm:text-base font-medium">{displayUsername}</h1>
-              <p className="text-gray-500 mt-0.5 flex items-center gap-1 text-[10px] sm:text-xs">
-                <CalendarClock className="h-3 w-3" />
-                Last updated{" "}
-                {profile.created_at
-                  ? formatDistanceToNow(new Date(profile.created_at), { addSuffix: true })
-                  : 'Unknown'}
+            <div className="min-w-0 overflow-hidden">
+              <h1 className="text-sm font-medium truncate">{displayUsername}</h1>
+              <p className="text-gray-500 flex items-center gap-1 text-[10px] truncate">
+                <CalendarClock className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">
+                  Last updated{" "}
+                  {profile.created_at
+                    ? formatDistanceToNow(new Date(profile.created_at), { addSuffix: true })
+                    : 'Unknown'}
+                </span>
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 flex-shrink-0">
           <Button
             variant="ghost"
             size="sm"
             onClick={handleStartNewChat}
-            className="h-8 sm:h-9 text-sm hover:bg-gray-100 rounded-full px-3 sm:px-4 gap-1.5"
+            className="h-8 w-8 p-0 text-sm hover:bg-gray-100 rounded-full flex items-center justify-center"
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            New Chat
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
+                className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full flex-shrink-0 flex items-center justify-center"
               >
                 <MoreVertical className="h-4 w-4 text-gray-600" />
               </Button>
@@ -820,12 +820,25 @@ export default function Chat() {
         </div>
       </div>
 
-      {/* Scrollable Messages Area */}
-      <div className="flex-1 overflow-y-auto bg-gray-50/50">
+      {/* Scrollable Messages Area - Add padding to account for fixed header and footer */}
+      <div 
+        className="absolute inset-0 overflow-y-auto bg-gray-50/50 chat-content" 
+        style={{ 
+          paddingTop: "calc(50px)", 
+          paddingBottom: "calc(60px)",
+          top: "0", 
+          bottom: "0",
+          width: "100%" 
+        }}
+      >
         <div className="px-4 sm:px-8 py-6">
           <div className="max-w-3xl mx-auto space-y-6">
-            {messages.map((message) => (
-              <div key={message.id} className={`${message.role === "user" ? "flex justify-end" : ""}`}>
+            {messages.map((message, index) => (
+              <div 
+                key={message.id} 
+                className={`${message.role === "user" ? "flex justify-end" : ""} chat-message`}
+                style={{ animationDelay: `${index * 0.05}s` }}
+              >
                 {message.role === "assistant" && (
                   <div className="flex items-center mb-1.5 text-[10px] sm:text-xs text-gray-500">
                     <div className="bg-white p-1 rounded-full mr-1.5">
@@ -866,7 +879,7 @@ export default function Chat() {
             ))}
 
             {isThinking && (
-              <div>
+              <div className="chat-message">
                 <div className="flex items-center mb-1.5 text-[10px] sm:text-xs text-gray-500">
                   <div className="bg-white p-1 rounded-full mr-1.5">
                     <div className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-600">
@@ -899,13 +912,13 @@ export default function Chat() {
               </div>
             )}
 
-            <div ref={messagesEndRef} className="h-6 sm:h-10" />
+            <div ref={messagesEndRef} className="h-6 sm:h-12" />
           </div>
         </div>
       </div>
 
       {/* Fixed Footer */}
-      <div className="sticky bottom-0 border-t border-gray-100 py-3 sm:py-4 px-4 sm:px-8 bg-white/95 backdrop-blur-sm">
+      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-gray-100 py-3 sm:py-4 px-4 sm:px-8 bg-white/95 backdrop-blur-sm chat-input">
         <div className="max-w-2xl mx-auto">
           <form onSubmit={handleSubmit} className="relative">
             <Input
@@ -933,35 +946,47 @@ export default function Chat() {
 
       {/* Delete Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle>
+        <AlertDialogContent className="bg-white border-none shadow-md rounded-xl overflow-hidden max-w-[90%] sm:max-w-md mx-auto">
+          <AlertDialogHeader className="bg-gradient-to-r from-gray-50 to-white p-4 sm:p-6">
+            <AlertDialogTitle className="text-lg sm:text-xl">
               {deleteType === "message" ? "Delete message?" : "Delete entire conversation?"}
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-sm">
               {deleteType === "message" 
                 ? "This action cannot be undone. The message will be permanently deleted."
                 : "This action cannot be undone. All messages in this conversation will be permanently deleted."
               }
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteInProgress}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={deleteType === "message" ? handleDeleteMessage : handleDeleteConversation}
-              className="bg-red-600 hover:bg-red-700 text-white"
-              disabled={deleteInProgress}
-            >
-              {deleteInProgress ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                "Delete"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
+          {deleteInProgress ? (
+            <div className="py-3 sm:py-4 space-y-3 sm:space-y-4 px-4 sm:px-6">
+              <div className="flex items-center gap-3">
+                <div className="h-5 w-5 sm:h-6 sm:w-6 relative">
+                  <div className="absolute inset-0 rounded-full border-2 border-t-transparent border-red-500 animate-spin"></div>
+                </div>
+                <span className="text-gray-700 text-sm sm:text-base">
+                  {deleteType === "message" ? "Deleting message..." : "Deleting conversation..."}
+                </span>
+              </div>
+              <div className="h-1.5 sm:h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                <div 
+                  className="h-full bg-red-500 transition-all duration-500 ease-in-out" 
+                  style={{ width: '100%', animation: 'progress 1.5s ease-in-out infinite' }}
+                ></div>
+              </div>
+            </div>
+          ) : (
+            <AlertDialogFooter className="flex gap-2 sm:space-x-0 mt-4 sm:mt-6 px-4 sm:px-6 pb-4 sm:pb-6">
+              <AlertDialogCancel className="border-gray-200 text-gray-700 hover:bg-gray-50 flex-1 rounded-full h-9 sm:h-10 text-sm">Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={deleteType === "message" ? handleDeleteMessage : handleDeleteConversation}
+                className="flex-1 bg-red-500 hover:bg-red-700 rounded-full h-9 sm:h-10 text-sm text-white"
+              >
+                <Trash className="h-4 w-4 mr-2" />
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          )}
         </AlertDialogContent>
       </AlertDialog>
     </div>

@@ -997,7 +997,7 @@ export default function Dashboard() {
                 <Button 
                   variant="destructive" 
                   onClick={() => deleteProfileId && handleDeleteProfile(deleteProfileId)}
-                  className="flex-1 bg-red-600 hover:bg-red-700 rounded-full h-9 sm:h-10 text-sm"
+                  className="flex-1 bg-red-500 hover:bg-red-700 rounded-full h-9 sm:h-10 text-sm text-white"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete

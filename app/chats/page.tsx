@@ -15,7 +15,8 @@ import {
   PlusCircle,
   ArrowRightCircle,
   Loader2,
-  User
+  User,
+  Trash2
 } from 'lucide-react'
 
 import {
@@ -39,6 +40,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface Profile {
   id: string
@@ -67,6 +78,10 @@ export default function ChatsPage() {
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isNewChatDialogOpen, setIsNewChatDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteConversationId, setDeleteConversationId] = useState<string | null>(null)
+  const [deleteProfileId, setDeleteProfileId] = useState<string | null>(null)
+  const [deleteInProgress, setDeleteInProgress] = useState(false)
   
   const { user } = useSupabase()
   const { toast } = useToast()
@@ -241,6 +256,56 @@ export default function ChatsPage() {
     }
   }
 
+  // Handle conversation deletion
+  const handleDeleteConversation = async () => {
+    if (!deleteConversationId || !user) return;
+    
+    try {
+      setDeleteInProgress(true);
+      
+      // Delete all messages first (due to foreign key constraint)
+      const { error: messagesError } = await supabase
+        .from("messages")
+        .delete()
+        .eq("conversation_id", deleteConversationId);
+        
+      if (messagesError) {
+        throw messagesError;
+      }
+      
+      // Then delete the conversation
+      const { error: conversationError } = await supabase
+        .from("conversations")
+        .delete()
+        .eq("id", deleteConversationId);
+        
+      if (conversationError) {
+        throw conversationError;
+      }
+      
+      // Update the UI
+      setConversations(conversations.filter(conv => conv.id !== deleteConversationId));
+      setFilteredConversations(filteredConversations.filter(conv => conv.id !== deleteConversationId));
+      
+      toast({
+        title: "Conversation deleted",
+        description: "The conversation has been deleted successfully",
+      });
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete conversation. Please try again.",
+      });
+    } finally {
+      setDeleteInProgress(false);
+      setDeleteDialogOpen(false);
+      setDeleteConversationId(null);
+      setDeleteProfileId(null);
+    }
+  };
+
   return (
     <div className="container mx-auto max-w-6xl p-4 py-8">
       <div className="flex justify-between items-center mb-6">
@@ -321,15 +386,17 @@ export default function ChatsPage() {
                     <Button 
                       size="sm" 
                       variant="ghost" 
-                      className="h-8 w-8 p-0 rounded-full"
+                      className="h-8 w-8 p-0 rounded-full hover:bg-red-50 hover:text-red-600"
                       onClick={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
-                        router.push(`/chat/${conversation.profile_id}`)
+                        setDeleteConversationId(conversation.id);
+                        setDeleteProfileId(conversation.profile_id);
+                        setDeleteDialogOpen(true);
                       }}
                     >
-                      <PlusCircle className="h-4 w-4" />
-                      <span className="sr-only">Start new conversation</span>
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Delete conversation</span>
                     </Button>
                   </div>
                 </div>
@@ -426,6 +493,49 @@ export default function ChatsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Delete Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="bg-white border-none shadow-md rounded-xl overflow-hidden max-w-[90%] sm:max-w-md mx-auto">
+          <AlertDialogHeader className="bg-gradient-to-r from-gray-50 to-white p-4 sm:p-6">
+            <AlertDialogTitle className="text-lg sm:text-xl">
+              Delete conversation?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              This action cannot be undone. All messages in this conversation will be permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {deleteInProgress ? (
+            <div className="py-3 sm:py-4 space-y-3 sm:space-y-4 px-4 sm:px-6">
+              <div className="flex items-center gap-3">
+                <div className="h-5 w-5 sm:h-6 sm:w-6 relative">
+                  <div className="absolute inset-0 rounded-full border-2 border-t-transparent border-red-500 animate-spin"></div>
+                </div>
+                <span className="text-gray-700 text-sm sm:text-base">
+                  Deleting conversation...
+                </span>
+              </div>
+              <div className="h-1.5 sm:h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                <div 
+                  className="h-full bg-red-500 transition-all duration-500 ease-in-out" 
+                  style={{ width: '100%', animation: 'progress 1.5s ease-in-out infinite' }}
+                ></div>
+              </div>
+            </div>
+          ) : (
+            <AlertDialogFooter className="flex gap-2 sm:space-x-0 mt-4 sm:mt-6 px-4 sm:px-6 pb-4 sm:pb-6">
+              <AlertDialogCancel className="border-gray-200 text-gray-700 hover:bg-gray-50 flex-1 rounded-full h-9 sm:h-10 text-sm">Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteConversation}
+                className="flex-1 bg-red-600 hover:bg-red-700 rounded-full h-9 sm:h-10 text-sm text-white"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 } 
