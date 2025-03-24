@@ -53,6 +53,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
 interface Message {
   id: string;
@@ -87,6 +88,37 @@ const BotIcon = () => (
     <path d="M12 2C8.6 2 6 4.6 6 8v1h12V8c0-3.4-2.6-6-6-6zm8 9H4v6c0 3.4 2.6 6 6 6h4c3.4 0 6-2.6 6-6v-6zm-9 7H9v-2h2v2zm6 0h-2v-2h2v2z" />
   </svg>
 );
+
+const ShimmerMessage = () => (
+  <div className="flex flex-col gap-2">
+    <div className="flex items-center gap-2">
+      <div className="h-6 w-6 rounded-full bg-gradient-to-r from-gray-100 to-gray-200 animate-shimmer" />
+      <div className="h-4 w-24 bg-gradient-to-r from-gray-100 to-gray-200 animate-shimmer rounded" />
+    </div>
+    <div className="space-y-2">
+      <div className="h-4 w-3/4 bg-gradient-to-r from-gray-100 to-gray-200 animate-shimmer rounded" />
+      <div className="h-4 w-1/2 bg-gradient-to-r from-gray-100 to-gray-200 animate-shimmer rounded" />
+    </div>
+  </div>
+);
+
+const ThinkingTimer = () => {
+  const [seconds, setSeconds] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSeconds(s => s + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="text-[10px] sm:text-xs text-gray-400 mt-1">
+      thinking... {seconds}s
+    </div>
+  );
+};
 
 export default function Chat() {
   const params = useParams();
@@ -640,35 +672,40 @@ export default function Chat() {
   // Loading state UI
   if (initialLoading) {
     return (
-      <div className="flex h-screen flex-col">
+      <div className="flex h-screen flex-col bg-white">
         <div className="border-b p-3 sm:p-4 flex justify-between items-center bg-white">
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push("/chats")}
-              className="border-gray-200 h-8 text-xs sm:text-sm rounded-full"
-            >
-              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-              Back
-            </Button>
-            <h1 className="text-lg sm:text-xl font-semibold">
-              Loading Chat...
-            </h1>
+            <div className="h-8 w-20 bg-gradient-to-r from-gray-100 to-gray-200 animate-shimmer rounded-full" />
+            <div className="h-8 w-8 bg-gradient-to-r from-gray-100 to-gray-200 animate-shimmer rounded-full" />
+            <div className="space-y-2">
+              <div className="h-4 w-24 bg-gradient-to-r from-gray-100 to-gray-200 animate-shimmer rounded" />
+              <div className="h-4 w-16 bg-gradient-to-r from-gray-100 to-gray-200 animate-shimmer rounded" />
+            </div>
           </div>
         </div>
 
-        <div className="flex-1 p-4 sm:p-6 flex flex-col items-center justify-center">
-          <div className="space-y-3 sm:space-y-4 w-full max-w-md">
-            <Skeleton className="h-10 sm:h-12 w-full rounded-2xl" />
-            <Skeleton className="h-24 sm:h-28 w-full rounded-2xl" />
-            <Skeleton className="h-10 sm:h-12 w-3/4 ml-auto rounded-2xl" />
-            <Skeleton className="h-28 sm:h-36 w-full rounded-2xl" />
+        <div className="flex-1 p-4 sm:p-6">
+          <div className="max-w-3xl mx-auto space-y-6">
+            <ShimmerMessage />
+            <div className="flex justify-end">
+              <div className="w-2/3">
+                <div className="space-y-2">
+                  <div className="h-4 w-full bg-gradient-to-r from-gray-100 to-gray-200 animate-shimmer rounded" />
+                  <div className="h-4 w-3/4 bg-gradient-to-r from-gray-100 to-gray-200 animate-shimmer rounded" />
+                </div>
+              </div>
+            </div>
+            <ShimmerMessage />
           </div>
-          <div className="mt-6 sm:mt-8 flex flex-col items-center">
-            <Loader2 className="h-8 w-8 sm:h-10 sm:w-10 animate-spin text-gray-400" />
-            <p className="text-xs sm:text-sm text-gray-500 mt-3">
-              Loading profile insights...
+        </div>
+
+        <div className="border-t p-4 flex justify-center items-center bg-white">
+          <div className="flex flex-col items-center gap-2">
+            <div className="relative flex items-center">
+              <div className="h-10 w-64 sm:w-96 bg-gradient-to-r from-gray-100 to-gray-200 animate-shimmer rounded-full" />
+            </div>
+            <p className="text-xs sm:text-sm text-gray-500">
+              Loading conversation...
             </p>
           </div>
         </div>
@@ -848,24 +885,31 @@ export default function Chat() {
               <div className="mb-6 sm:mb-8">
                 <div className="flex items-center mb-1.5 sm:mb-2 text-[10px] sm:text-xs text-gray-500">
                   <div className="bg-gray-100 p-1 rounded-full mr-1.5 sm:mr-2">
-                    <Bot className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-600" />
+                    <div className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-600">
+                      <BotIcon />
+                    </div>
                   </div>
                   AI Assistant
                 </div>
                 <div className="border border-gray-200 bg-[#f8f9fa] rounded-2xl p-3 sm:p-4 max-w-[90%] sm:max-w-[85%] shadow-sm">
-                  <div className="flex space-x-1">
-                    <div
-                      className="h-1.5 w-1.5 sm:h-2 sm:w-2 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "0s" }}
-                    />
-                    <div
-                      className="h-1.5 w-1.5 sm:h-2 sm:w-2 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.2s" }}
-                    />
-                    <div
-                      className="h-1.5 w-1.5 sm:h-2 sm:w-2 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.4s" }}
-                    />
+                  <div className="flex flex-col">
+                    <div className="flex items-center space-x-2">
+                      <div className="flex space-x-1">
+                        <div
+                          className="h-1.5 w-1.5 sm:h-2 sm:w-2 bg-gradient-to-r from-gray-400 to-gray-300 rounded-full animate-pulse"
+                          style={{ animationDelay: "0s" }}
+                        />
+                        <div
+                          className="h-1.5 w-1.5 sm:h-2 sm:w-2 bg-gradient-to-r from-gray-400 to-gray-300 rounded-full animate-pulse"
+                          style={{ animationDelay: "0.2s" }}
+                        />
+                        <div
+                          className="h-1.5 w-1.5 sm:h-2 sm:w-2 bg-gradient-to-r from-gray-400 to-gray-300 rounded-full animate-pulse"
+                          style={{ animationDelay: "0.4s" }}
+                        />
+                      </div>
+                    </div>
+                    <ThinkingTimer />
                   </div>
                 </div>
               </div>
