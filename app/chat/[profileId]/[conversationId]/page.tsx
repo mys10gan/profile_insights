@@ -1,0 +1,739 @@
+"use client";
+
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+import { useSupabase } from "@/components/providers/supabase-provider";
+import { sanitizeUsername } from "@/lib/utils";
+import {
+  ChevronLeft,
+  SendHorizontal,
+  Loader2,
+  Instagram,
+  Linkedin,
+  User,
+  Bot,
+  DownloadCloud,
+  RefreshCw,
+  MessageSquare,
+  Calendar,
+  BarChart,
+  Copy,
+  Send,
+  BarChart2,
+  Download,
+} from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useParams } from "next/navigation";
+import ReactMarkdown from "react-markdown";
+import { motion, AnimatePresence } from "framer-motion";
+
+interface Message {
+  id: string;
+  conversation_id: string;
+  role: "user" | "assistant";
+  content: string;
+  created_at: string;
+}
+
+interface Profile {
+  id: string;
+  platform: "instagram" | "linkedin";
+  username: string;
+}
+
+// Helper function for proxied images
+function getProxiedImageUrl(originalUrl: string) {
+  if (!originalUrl) return "";
+  const encodedUrl = encodeURIComponent(originalUrl);
+  return `/api/proxy?url=${encodedUrl}`;
+}
+
+const BotIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    width="100%"
+    height="100%"
+    fill="currentColor"
+    className="w-full h-full"
+  >
+    <path d="M12 2C8.6 2 6 4.6 6 8v1h12V8c0-3.4-2.6-6-6-6zm8 9H4v6c0 3.4 2.6 6 6 6h4c3.4 0 6-2.6 6-6v-6zm-9 7H9v-2h2v2zm6 0h-2v-2h2v2z" />
+  </svg>
+);
+
+export default function Chat() {
+  const params = useParams();
+  const profileId = params.profileId as string;
+  const conversationId = params.conversationId as string;
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [isThinking, setIsThinking] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+  const router = useRouter();
+  const { user } = useSupabase();
+
+  // Platform-specific welcome messages
+  const getWelcomeMessage = (
+    platform: "instagram" | "linkedin",
+    username: string
+  ) => {
+    const sanitizedUsername = sanitizeUsername(username, platform);
+
+    if (platform === "instagram") {
+      return `👋 Hello! I'm your AI assistant specialized in analyzing Instagram profiles. I've analyzed the Instagram account "${sanitizedUsername}" and I'm ready to provide insights about their content strategy, engagement patterns, audience demographics, and growth opportunities. What would you like to know about this profile?`;
+    } else {
+      return `👋 Hello! I'm your AI assistant specialized in analyzing LinkedIn profiles. I've analyzed the LinkedIn profile for "${sanitizedUsername}" and I'm ready to provide insights about their professional network, content effectiveness, career trajectory, and business development opportunities. What would you like to know about this profile?`;
+    }
+  };
+
+  // Fetch data on component mount
+  useEffect(() => {
+    if (!user) {
+      router.push("/");
+      return;
+    }
+
+    // Check if we have cached data
+    const cachedData = sessionStorage.getItem(
+      `chat_${profileId}_${conversationId}`
+    );
+    if (cachedData) {
+      try {
+        const { profile, messages } = JSON.parse(cachedData);
+        setProfile(profile);
+        setMessages(messages);
+        setInitialLoading(false);
+        return;
+      } catch (e) {
+        console.error("Error parsing cached data:", e);
+        // Continue with normal loading if cache parsing fails
+      }
+    }
+
+    const fetchData = async () => {
+      try {
+        setInitialLoading(true);
+
+        // Fetch profile
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("id, platform, username")
+          .eq("id", profileId)
+          .single();
+
+        if (profileError) {
+          console.error("Profile fetch error:", profileError);
+          throw profileError;
+        }
+
+        setProfile(profileData);
+
+        // Fetch messages
+        const { data: messagesData, error: messagesError } = await supabase
+          .from("messages")
+          .select("*")
+          .eq("conversation_id", conversationId)
+          .order("created_at", { ascending: true });
+
+        if (messagesError) {
+          console.error("Messages fetch error:", messagesError);
+          throw messagesError;
+        }
+
+        // If no messages, add a welcome message
+        let finalMessages = messagesData || [];
+        if (!messagesData || messagesData.length === 0) {
+          const welcomeMessage = {
+            id: "welcome",
+            conversation_id: conversationId,
+            role: "assistant" as const,
+            content: getWelcomeMessage(
+              profileData.platform,
+              profileData.username
+            ),
+            created_at: new Date().toISOString(),
+          };
+          finalMessages = [welcomeMessage];
+
+          // Save the welcome message to the database
+          const { error: saveError } = await supabase.from("messages").insert([
+            {
+              conversation_id: conversationId,
+              role: "assistant",
+              content: welcomeMessage.content,
+            },
+          ]);
+
+          if (saveError) {
+            console.error("Error saving welcome message:", saveError);
+          }
+        }
+
+        setMessages(finalMessages);
+
+        // Cache the data to prevent unnecessary reloads
+        sessionStorage.setItem(
+          `chat_${profileId}_${conversationId}`,
+          JSON.stringify({
+            profile: profileData,
+            messages: finalMessages,
+          })
+        );
+      } catch (error) {
+        console.error("Data fetch error:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description:
+            "Failed to load chat data. Please try refreshing the page.",
+        });
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [profileId, conversationId, user, router, toast]);
+
+  // Update cache when messages change
+  useEffect(() => {
+    if (profile && conversationId && messages.length > 0) {
+      sessionStorage.setItem(
+        `chat_${profileId}_${conversationId}`,
+        JSON.stringify({
+          profile,
+          messages,
+        })
+      );
+    }
+  }, [messages, profile, profileId, conversationId]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isThinking]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || loading || !user) return;
+
+    const userMessage = input.trim();
+    setInput("");
+
+    // Add user message to the state
+    const newUserMessage = {
+      id: `temp-${Date.now()}`,
+      conversation_id: conversationId,
+      role: "user" as const,
+      content: userMessage,
+      created_at: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, newUserMessage]);
+    setIsThinking(true);
+
+    try {
+      // Save user message to the database
+      const { data: savedMessage, error: saveError } = await supabase
+        .from("messages")
+        .insert([
+          {
+            conversation_id: conversationId,
+            role: "user",
+            content: userMessage,
+          },
+        ])
+        .select()
+        .single();
+
+      if (saveError) {
+        console.error("Error saving user message:", saveError);
+        throw saveError;
+      }
+
+      // Replace the temporary message with the saved one
+      setMessages((prev) =>
+        prev.map((msg) => (msg.id === newUserMessage.id ? savedMessage : msg))
+      );
+
+      // Call API to get AI response
+      setLoading(true);
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          conversationId,
+          profileId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      // Add AI response to the messages
+      const aiMessage = {
+        id: data.id || `ai-${Date.now()}`,
+        conversation_id: conversationId,
+        role: "assistant" as const,
+        content: data.reply || data.content,
+        created_at: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, aiMessage]);
+    } catch (error) {
+      console.error("Error in chat submission:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+      });
+    } finally {
+      setLoading(false);
+      setIsThinking(false);
+    }
+  };
+
+  const formatAIResponse = (text: string) => {
+    // Format links with markdown
+    return (
+      <div className="prose prose-sm max-w-none">
+        <ReactMarkdown
+          components={{
+            a: ({ node, ...props }) => (
+              <a
+                {...props}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              />
+            ),
+            p: ({ node, ...props }) => (
+              <p {...props} className="mb-4 last:mb-0 leading-relaxed" />
+            ),
+            ul: ({ node, ...props }) => (
+              <ul {...props} className="list-disc pl-5 mb-4 space-y-2" />
+            ),
+            ol: ({ node, ...props }) => (
+              <ol {...props} className="list-decimal pl-5 mb-4 space-y-2" />
+            ),
+            li: ({ node, ...props }) => (
+              <li {...props} className="mb-1 leading-relaxed" />
+            ),
+            h1: ({ node, ...props }) => (
+              <h1
+                {...props}
+                className="text-xl font-bold mb-3 mt-6 first:mt-0"
+              />
+            ),
+            h2: ({ node, ...props }) => (
+              <h2
+                {...props}
+                className="text-lg font-bold mb-3 mt-5 first:mt-0"
+              />
+            ),
+            h3: ({ node, ...props }) => (
+              <h3 {...props} className="text-base font-bold mb-2 mt-4" />
+            ),
+            strong: ({ node, ...props }) => (
+              <strong {...props} className="font-bold" />
+            ),
+            em: ({ node, ...props }) => <em {...props} className="italic" />,
+            code: ({ node, inline, className, ...props }: any) =>
+              inline ? (
+                <code
+                  {...props}
+                  className="bg-gray-100 text-[13px] px-1 py-0.5 rounded font-mono"
+                />
+              ) : (
+                <code
+                  {...props}
+                  className="block bg-gray-100 text-[13px] p-3 sm:p-4 rounded-md my-3 font-mono overflow-x-auto whitespace-pre"
+                />
+              ),
+            pre: ({ node, ...props }) => (
+              <pre
+                {...props}
+                className="bg-gray-100 p-3 rounded overflow-x-auto mb-4"
+              />
+            ),
+            blockquote: ({ node, ...props }) => (
+              <blockquote
+                {...props}
+                className="border-l-4 border-gray-200 pl-4 italic text-gray-700 mb-4"
+              />
+            ),
+            table: ({ node, ...props }) => (
+              <div className="overflow-x-auto mb-4">
+                <table
+                  {...props}
+                  className="min-w-full divide-y divide-gray-200"
+                />
+              </div>
+            ),
+            th: ({ node, ...props }) => (
+              <th
+                {...props}
+                className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              />
+            ),
+            td: ({ node, ...props }) => (
+              <td
+                {...props}
+                className="px-3 py-2 whitespace-nowrap text-sm text-gray-500"
+              />
+            ),
+            img: ({ node, ...props }) => (
+              <img
+                {...props}
+                onError={(e) => handleImageError(e)}
+                className="max-w-full h-auto rounded my-4 max-h-64"
+              />
+            ),
+          }}
+        >
+          {text}
+        </ReactMarkdown>
+      </div>
+    );
+  };
+
+  // Add this function to handle image loading errors
+  const handleImageError = (
+    e: React.SyntheticEvent<HTMLImageElement, Event>
+  ) => {
+    const target = e.target as HTMLImageElement;
+
+    // If the image is already using the proxy, show a fallback
+    if (target.src.startsWith("/api/proxy")) {
+      target.src = "/placeholder-image.svg"; // Fallback image
+      target.alt = "Image unavailable";
+      target.classList.add("opacity-50");
+    } else {
+      // Try loading through our proxy
+      const originalSrc = target.src;
+      target.src = getProxiedImageUrl(originalSrc);
+    }
+  };
+
+  const handleStartNewChat = async () => {
+    if (!user || !profile) return;
+
+    try {
+      // Create a new conversation
+      const { data, error } = await supabase
+        .from("conversations")
+        .insert([
+          {
+            user_id: user.id,
+            profile_id: profileId,
+            created_at: new Date().toISOString(),
+          },
+        ])
+        .select();
+
+      if (error) {
+        console.error("Error creating new conversation:", error);
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        router.push(`/chat/${profileId}/${data[0].id}`);
+      }
+    } catch (error) {
+      console.error("Error starting new chat:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to start a new conversation. Please try again.",
+      });
+    }
+  };
+
+  const exportChat = () => {
+    try {
+      // Format messages for export
+      const exportData = messages
+        .filter((msg) => msg.id !== "welcome")
+        .map((msg) => `${msg.role === "user" ? "You" : "AI"}: ${msg.content}`)
+        .join("\n\n");
+
+      // Create file and download
+      const blob = new Blob([exportData], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${profile?.platform}-${profile?.username}-chat-${
+        new Date().toISOString().split("T")[0]
+      }.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Success",
+        description: "Chat exported successfully",
+      });
+    } catch (error) {
+      console.error("Export error:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to export chat",
+      });
+    }
+  };
+
+  // Loading state UI
+  if (initialLoading) {
+    return (
+      <div className="flex h-screen flex-col">
+        <div className="border-b p-3 sm:p-4 flex justify-between items-center bg-white">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/chats")}
+              className="border-gray-200 h-8 text-xs sm:text-sm rounded-full"
+            >
+              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+              Back
+            </Button>
+            <h1 className="text-lg sm:text-xl font-semibold">
+              Loading Chat...
+            </h1>
+          </div>
+        </div>
+
+        <div className="flex-1 p-4 sm:p-6 flex flex-col items-center justify-center">
+          <div className="space-y-3 sm:space-y-4 w-full max-w-md">
+            <Skeleton className="h-10 sm:h-12 w-full rounded-2xl" />
+            <Skeleton className="h-24 sm:h-28 w-full rounded-2xl" />
+            <Skeleton className="h-10 sm:h-12 w-3/4 ml-auto rounded-2xl" />
+            <Skeleton className="h-28 sm:h-36 w-full rounded-2xl" />
+          </div>
+          <div className="mt-6 sm:mt-8 flex flex-col items-center">
+            <Loader2 className="h-8 w-8 sm:h-10 sm:w-10 animate-spin text-gray-400" />
+            <p className="text-xs sm:text-sm text-gray-500 mt-3">
+              Loading profile insights...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Profile not found UI
+  if (!profile) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
+        <div className="text-lg sm:text-xl font-medium mb-3 sm:mb-4 text-center">
+          Profile not found
+        </div>
+        <p className="text-gray-500 mb-5 sm:mb-6 text-center text-sm sm:text-base">
+          The profile you're looking for doesn't exist or is still processing
+        </p>
+        <Button
+          onClick={() => router.push("/chats")}
+          className="gap-2 text-sm rounded-full"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Return to Chats
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-screen flex-col bg-white">
+      {/* Header */}
+      <div className="border-b p-3 sm:p-4 flex justify-between items-center bg-white shadow-sm">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push("/chats")}
+            className="border-gray-200 h-8 text-xs sm:text-sm rounded-full"
+          >
+            <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+            Back
+          </Button>
+          <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-gray-100">
+            {profile?.platform === "instagram" ? (
+              <Instagram className="h-4 w-4 sm:h-5 sm:w-5 text-gray-700" />
+            ) : (
+              <Linkedin className="h-4 w-4 sm:h-5 sm:w-5 text-gray-700" />
+            )}
+          </div>
+          <div>
+            <h1 className="text-sm sm:text-base font-semibold">
+              {profile
+                ? sanitizeUsername(profile.username, profile.platform)
+                : ""}
+            </h1>
+            <Badge
+              variant="outline"
+              className="text-[10px] sm:text-xs text-gray-600 bg-gray-50 border-gray-200 rounded-full"
+            >
+              {profile?.platform === "instagram" ? "Instagram" : "LinkedIn"}
+            </Badge>
+          </div>
+        </div>
+
+        <div className="flex gap-1 sm:gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1 border-gray-200 h-8 text-xs sm:text-sm whitespace-nowrap rounded-full"
+            onClick={handleStartNewChat}
+          >
+            <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">New Chat</span>
+            <span className="xs:hidden">New</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1 border-gray-200 h-8 text-xs sm:text-sm rounded-full"
+            onClick={exportChat}
+          >
+            <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Export</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1 border-gray-200 h-8 text-xs sm:text-sm rounded-full"
+            onClick={() => router.push(`/analysis/${profileId}`)}
+          >
+            <BarChart2 className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Analysis</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 bg-white flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
+          <div className="max-w-3xl mx-auto">
+            {messages.map((message) => (
+              <div key={message.id} className={`mb-8`}>
+                {message.role === "assistant" && (
+                  <div className="flex items-center mb-2 text-xs text-gray-500">
+                    <div className="bg-gray-100 p-1 rounded-full mr-2">
+                      <div className="h-3.5 w-3.5 text-gray-600">
+                        <BotIcon />
+                      </div>
+                    </div>
+                    AI Assistant
+                  </div>
+                )}
+
+                <div
+                  className={`flex ${
+                    message.role === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <div
+                    className={`
+                      ${
+                        message.role === "user"
+                          ? "bg-[#f8f9fa] border border-gray-200 text-gray-800 ml-12"
+                          : "bg-[#f8f9fa] border border-gray-200 text-gray-800"
+                      } rounded-2xl p-4 max-w-[85%] shadow-sm
+                    `}
+                  >
+                    {message.role === "user" ? (
+                      <div className="text-sm">{message.content}</div>
+                    ) : (
+                      <div className="text-sm leading-relaxed text-gray-800">
+                        {formatAIResponse(message.content)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {isThinking && (
+              <div className="mb-8">
+                <div className="flex items-center mb-2 text-xs text-gray-500">
+                  <div className="bg-gray-100 p-1 rounded-full mr-2">
+                    <Bot className="h-3.5 w-3.5 text-gray-600" />
+                  </div>
+                  AI Assistant
+                </div>
+                <div className="border border-gray-200 bg-[#f8f9fa] rounded-2xl p-4 max-w-[85%] shadow-sm">
+                  <div className="flex space-x-1">
+                    <div
+                      className="h-2 w-2 bg-gray-400 rounded-full animate-bounce"
+                      style={{ animationDelay: "0s" }}
+                    />
+                    <div
+                      className="h-2 w-2 bg-gray-400 rounded-full animate-bounce"
+                      style={{ animationDelay: "0.2s" }}
+                    />
+                    <div
+                      className="h-2 w-2 bg-gray-400 rounded-full animate-bounce"
+                      style={{ animationDelay: "0.4s" }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} className="h-10" />
+          </div>
+        </div>
+
+        {/* Input area */}
+        <div className="border-t py-5 px-4 sm:px-8 bg-white">
+          <div className="max-w-2xl mx-auto">
+            <div className="max-w-xl mx-auto">
+              <form onSubmit={handleSubmit} className="relative">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Ask something about this profile..."
+                  className="w-full text-sm pl-12 pr-12 border border-gray-200 h-12 py-3 px-5 rounded-full focus-visible:ring-0 focus:border-gray-300 shadow-none bg-[#f8f9fa] hover:bg-gray-100 transition-colors"
+                  disabled={loading}
+                />
+                <Button
+                  type="submit"
+                  size="icon"
+                  disabled={loading || !input.trim()}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-[#f8f9fa] border border-gray-200 hover:bg-gray-100 flex items-center justify-center shadow-none transition-colors"
+                >
+                  {loading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-700" />
+                  ) : (
+                    <SendHorizontal className="h-3.5 w-3.5 text-gray-700" />
+                  )}
+                </Button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

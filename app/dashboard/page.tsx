@@ -31,6 +31,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog"
+import { VisuallyHidden } from "@/components/ui/visually-hidden"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -646,53 +647,11 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <div className="container mx-auto max-w-6xl p-4 py-8">
-        <div className="flex justify-between items-center mb-10 flex-col sm:flex-row gap-4 sm:gap-0">
-          <header className="text-left w-full sm:w-auto order-2 sm:order-1">
-            <div className="flex items-center gap-3 justify-center sm:justify-start mb-2">
-              <svg className="w-10 h-10 text-primary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M15.907 11.998 10.332 9.23a.9.9 0 0 1-.16-.037l-.018-.007v6.554c0 .017.008.034.01.051l2.388-2.974 3.355-.82Z"/>
-                <path d="m11.463 4.054 5.579 3.323A4.02 4.02 0 0 1 18.525 9c.332.668.47 1.414.398 2.155a3.07 3.07 0 0 1-.745 1.65a3.108 3.108 0 0 1-1.55.951c-.022.007-.045.005-.07.01-.062.03-.126.057-.08l-2.72.667-1.992 2.48c-.18.227-.41.409-.67.534.047.034.085.077.137.107a2.05 2.05 0 0 0 1.995.035c.592-.33 2.15-1.201 4.636-2.892l.28-.19c1.328-.895 3.616-2.442 3.967-4.215a9.94 9.94 0 0 0-1.713-4.154a10.027 10.027 0 0 0-3.375-2.989a10.107 10.107 0 0 0-8.802-.418c1.162.287 2.287.704 3.354 1.243Z"/>
-                <path d="M5.382 17.082v-6.457a3.7 3.7 0 0 1 .45-1.761a3.733 3.733 0 0 1 1.238-1.34a3.915 3.915 0 0 1 3.433-.245c.176.03.347.084.508.161l5.753 2.856c.082.05.161.105.236.165a2.128 2.128 0 0 0-.953-1.455l-5.51-3.284c-1.74-.857-3.906-1.523-5.244-1.097a9.96 9.96 0 0 0-2.5 3.496a9.895 9.895 0 0 0 .283 8.368a9.973 9.973 0 0 0 2.73 3.322a17.161 17.161 0 0 1-.424-2.729Z"/>
-                <path d="m19.102 16.163-.272.183c-2.557 1.74-4.169 2.64-4.698 2.935a4.083 4.083 0 0 1-2 .53a3.946 3.946 0 0 1-1.983-.535a3.788 3.788 0 0 1-1.36-1.361a3.752 3.752 0 0 1-.51-1.85a1.812 1.812 0 0 1-.043-.26V9.143c0-.024.009-.046.01-.07-.056.02-.11.043-.162.07a1.796 1.796 0 0 0-.787 1.516v6.377a10.67 10.67 0 0 0 1.113 4.27a10.11 10.11 0 0 0 8.505-.53a10.022 10.022 0 0 0 3.282-2.858a9.936 9.936 0 0 0 1.75-3.97a19.615 19.615 0 0 1-2.845 2.216Z"/>
-              </svg>
-              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-center sm:text-left">Insights AI</h1>
-            </div>
-            <p className="text-gray-500 max-w-2xl text-center sm:text-left">Analyze social media profiles to gain insights, understand engagement patterns, and discover growth opportunities.</p>
+        <div className="mb-10">
+          <header className="text-center">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Welcome to Insights AI</h1>
+            <p className="text-gray-500 max-w-2xl mx-auto mt-2">Analyze social media profiles to gain insights, understand engagement patterns, and discover growth opportunities.</p>
           </header>
-          {user && (
-            <div className="flex justify-end w-full sm:w-auto order-1 sm:order-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="rounded-full h-10 px-3 flex items-center gap-2 border-gray-200">
-                    <Avatar className="h-7 w-7">
-                      <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${user.email}`} alt={user.email || ""} />
-                      <AvatarFallback className="text-xs">{user.email?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
-                    </Avatar>
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 rounded-xl p-2">
-                  <DropdownMenuLabel className="font-normal text-xs text-gray-500">
-                    Logged in as
-                  </DropdownMenuLabel>
-                  <DropdownMenuItem className="rounded-lg">
-                    <span className="font-medium truncate">{user.email}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="my-1" />
-                  <DropdownMenuItem 
-                    className="text-red-600 cursor-pointer rounded-lg flex items-center gap-2"
-                    onClick={async () => {
-                      await supabase.auth.signOut();
-                      router.push('/');
-                    }}
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Log Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
         </div>
 
         <div className="space-y-8 md:space-y-12">
@@ -797,99 +756,29 @@ export default function Dashboard() {
             </Card>
           )}
 
-          {!isLoading && !showAllProfiles && recentProfiles.length > 0 && (
+          {!isLoading && recentProfiles.length > 0 && (
             <div className="space-y-4 sm:space-y-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-center">Recent Profiles</h2>
-              <div className="space-y-3 sm:space-y-5 max-w-full sm:max-w-4xl mx-auto px-1 sm:px-0">
-                {recentProfiles.slice(0, 3).map((profile) => (
-                  <div 
-                    key={profile.id}
-                    className="relative flex flex-col md:flex-row md:items-center md:space-y-0 rounded-xl border border-gray-100 p-4 sm:p-5 transition-all hover:bg-gray-50/70 hover:shadow-sm group"
-                  >
-                    <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                      <div className="h-10 w-10 sm:h-14 sm:w-14 shrink-0 flex items-center justify-center rounded-full bg-gray-100 group-hover:bg-white transition-colors">
-                        {profile.platform === 'instagram' ? (
-                          <Instagram className="h-5 w-5 sm:h-6 sm:w-6 text-gray-700" />
-                        ) : (
-                          <Linkedin className="h-5 w-5 sm:h-6 sm:w-6 text-gray-700" />
-                        )}
-                      </div>
-                      
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-base sm:text-lg font-semibold truncate">
-                            {sanitizeUsername(profile.username, profile.platform)}
-                          </h3>
-                          <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 uppercase text-xs font-semibold tracking-wider">
-                            {profile.platform === 'instagram' ? 'Instagram' : 'LinkedIn'}
-                          </Badge>
-                        </div>
-                        <div className="mt-1 flex items-center gap-x-1.5 text-xs sm:text-sm text-gray-500">
-                          <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-none" />
-                            <span>
-                              {profile.scrape_status === 'fetching' || profile.scrape_status === 'pending' ? 'Fetching...' : 
-                               profile.scrape_status === 'scraping' ? 'Processing...' : 
-                               profile.scrape_status === 'failed' ? 'Failed' : 'Completed'}
-                            </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-wrap items-center gap-2 mt-3 md:mt-0">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => router.push(`/analysis/${profile.id}`)}
-                        className="h-8 gap-1.5 border-gray-200 text-gray-700 hover:bg-gray-50 rounded-full text-xs flex-1 md:flex-auto"
-                      >
-                        <TrendingUp className="h-3.5 w-3.5" />
-                        <span className="sm:inline">Analysis</span>
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => router.push(`/chat/${profile.id}`)}
-                        className="h-8 gap-1.5 border-gray-200 text-gray-700 hover:bg-gray-50 rounded-full text-xs flex-1 md:flex-auto"
-                      >
-                        <MessageSquare className="h-3.5 w-3.5" />
-                        <span className="sm:inline">Chat</span>
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-center">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl sm:text-2xl font-bold">Your Profiles</h2>
                 <Button 
                   variant="outline"
-                  onClick={() => setShowAllProfiles(true)}
+                  onClick={() => setShowAllProfiles(!showAllProfiles)}
                   className="rounded-full border-gray-200 text-gray-700 px-4 sm:px-6 h-9 sm:h-10 text-sm"
                 >
-                  <Clock className="h-4 w-4 mr-2" />
-                  See All Profiles
+                  {showAllProfiles ? (
+                    <span className="flex items-center">
+                      <ChevronDown className="h-4 w-4 mr-2" />
+                      Show Less
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <Clock className="h-4 w-4 mr-2" />
+                      See All
+                    </span>
+                  )}
                 </Button>
               </div>
-            </div>
-          )}
-
-          {!isLoading && showAllProfiles && (
-            <Card className="bg-white border-none shadow-sm overflow-hidden max-w-full md:max-w-5xl mx-auto">
-              <CardHeader className="bg-gradient-to-r from-gray-50 to-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 sm:p-6">
-                <div>
-                  <CardTitle className="text-xl sm:text-2xl">All Profiles</CardTitle>
-                  <CardDescription className="text-sm sm:text-base">
-                    View and manage your previously analyzed profiles
-                  </CardDescription>
-                </div>
-                <Button 
-                  variant="outline"
-                  onClick={() => setShowAllProfiles(false)}
-                  className="rounded-full border-gray-200 text-gray-700 self-end sm:self-auto"
-                  size="sm"
-                >
-                  X
-                </Button>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6">
+              <div className="space-y-3 sm:space-y-5 max-w-full sm:max-w-5xl mx-auto px-1 sm:px-0">
                 {loadingProfiles ? (
                   <div className="space-y-4 sm:space-y-6">
                     {[1, 2, 3].map((i) => (
@@ -903,7 +792,169 @@ export default function Dashboard() {
                       </div>
                     ))}
                   </div>
-                ) : recentProfiles.length === 0 ? (
+                ) : (
+                  (showAllProfiles ? recentProfiles : recentProfiles.slice(0, 3)).map((profile) => (
+                    <div 
+                      key={profile.id}
+                      className="relative flex flex-col sm:flex-row sm:items-center sm:space-y-0 rounded-xl border border-gray-100 p-4 sm:p-5 transition-all hover:bg-gray-50/70 hover:shadow-sm group"
+                    >
+                      <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                        <div className="h-10 w-10 sm:h-14 sm:w-14 shrink-0 flex items-center justify-center rounded-full bg-gray-100 group-hover:bg-white transition-colors">
+                          {profile.platform === 'instagram' ? (
+                            <Instagram className="h-5 w-5 sm:h-6 sm:w-6 text-gray-700" />
+                          ) : (
+                            <Linkedin className="h-5 w-5 sm:h-6 sm:w-6 text-gray-700" />
+                          )}
+                        </div>
+                        
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-base sm:text-lg font-semibold truncate">
+                              {sanitizeUsername(profile.username, profile.platform)}
+                            </h3>
+                            <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 uppercase text-xs font-semibold tracking-wider">
+                              {profile.platform === 'instagram' ? 'Instagram' : 'LinkedIn'}
+                            </Badge>
+                            
+                            {profile.scrape_status === 'pending' && (
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1 text-[10px] sm:text-xs">
+                                <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                                Pending
+                              </Badge>
+                            )}
+                            
+                            {profile.scrape_status === 'fetching' && (
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1 text-[10px] sm:text-xs">
+                                <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                                Fetching
+                              </Badge>
+                            )}
+                            
+                            {profile.scrape_status === 'scraping' && (
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1 text-[10px] sm:text-xs">
+                                <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                                Processing
+                              </Badge>
+                            )}
+                            
+                            {profile.scrape_status === 'failed' && (
+                              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 gap-1 text-[10px] sm:text-xs">
+                                <X className="h-2.5 w-2.5" />
+                                Failed
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="mt-1 flex items-center gap-x-1.5 text-xs sm:text-sm text-gray-500">
+                            <CalendarClock className="h-3 w-3 sm:h-4 sm:w-4 flex-none" />
+                            <span>
+                              {profile.last_scraped 
+                                ? `Updated ${formatDistanceToNow(new Date(profile.last_scraped), { addSuffix: true })}` 
+                                : 'Never scraped'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 mt-3 sm:mt-0">
+                        <HoverCard>
+                          <HoverCardTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="h-8 gap-1.5 border-gray-200 text-gray-700 hover:bg-gray-50 rounded-full text-xs"
+                              onClick={() => fetchProfileStats(profile.id)}
+                            >
+                              <BarChart className="h-3.5 w-3.5" />
+                              <span className="sm:inline">Stats</span>
+                            </Button>
+                          </HoverCardTrigger>
+                          <HoverCardContent className="w-60 p-3 bg-white shadow-md rounded-xl border-gray-100">
+                            {profileStats[profile.id]?.loading ? (
+                              <div className="flex items-center justify-center py-4">
+                                <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                              </div>
+                            ) : profile.platform === 'instagram' ? (
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm text-gray-500">Followers</span>
+                                  <span className="font-medium">{profileStats[profile.id]?.followers || 'N/A'}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm text-gray-500">Posts</span>
+                                  <span className="font-medium">{profileStats[profile.id]?.posts || 'N/A'}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm text-gray-500">Engagement</span>
+                                  <span className="font-medium">{profileStats[profile.id]?.engagement || 'N/A'}</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm text-gray-500">Connections</span>
+                                  <span className="font-medium">{profileStats[profile.id]?.connections || 'N/A'}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm text-gray-500">Skills</span>
+                                  <span className="font-medium">{profileStats[profile.id]?.skills || 'N/A'}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm text-gray-500">Experience</span>
+                                  <span className="font-medium">{profileStats[profile.id]?.experience || 'N/A'}</span>
+                                </div>
+                              </div>
+                            )}
+                          </HoverCardContent>
+                        </HoverCard>
+                        
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => router.push(`/analysis/${profile.id}`)}
+                          className="h-8 gap-1.5 border-gray-200 text-gray-700 hover:bg-gray-50 rounded-full text-xs"
+                        >
+                          <TrendingUp className="h-3.5 w-3.5" />
+                          <span className="sm:inline">Analysis</span>
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => router.push(`/chat/${profile.id}`)}
+                          className="h-8 gap-1.5 border-gray-200 text-gray-700 hover:bg-gray-50 rounded-full text-xs"
+                        >
+                          <MessageSquare className="h-3.5 w-3.5" />
+                          <span className="sm:inline">Chat</span>
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="h-8 text-gray-700 border-gray-200 hover:bg-gray-50 hover:text-red-600 rounded-full"
+                          onClick={() => {
+                            setDeleteProfileId(profile.id);
+                            setIsDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+                
+                {!showAllProfiles && recentProfiles.length > 3 && (
+                  <div className="flex justify-center mt-4">
+                    <Button 
+                      variant="outline"
+                      onClick={() => setShowAllProfiles(true)}
+                      className="rounded-full border-gray-200 text-gray-700 px-4 sm:px-6 h-9 sm:h-10 text-sm"
+                    >
+                      <Clock className="h-4 w-4 mr-2" />
+                      Show All ({recentProfiles.length})
+                    </Button>
+                  </div>
+                )}
+                
+                {recentProfiles.length === 0 && !loadingProfiles && (
                   <div className="flex flex-col items-center justify-center py-10 sm:py-16 text-center">
                     <div className="rounded-full bg-gray-100 p-4 sm:p-6 mb-4">
                       <User className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400" />
@@ -912,124 +963,10 @@ export default function Dashboard() {
                     <p className="text-gray-500 max-w-md text-sm sm:text-base">
                       Start by analyzing a profile to see insights and performance metrics.
                     </p>
-                    <Button 
-                      onClick={() => setShowAllProfiles(false)}
-                      className="mt-4 sm:mt-6 bg-black hover:bg-black/90 text-white rounded-full"
-                    >
-                      <PlusCircle className="h-4 w-4 mr-2" />
-                      Create Your First Analysis
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                    {recentProfiles.map((profile) => (
-                      <div 
-                        key={profile.id}
-                        className="relative flex flex-col rounded-xl border border-gray-100 p-3 sm:p-4 transition-all hover:bg-gray-50/70 hover:shadow-sm group"
-                      >
-                        <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-                          <div className="h-8 w-8 sm:h-10 sm:w-10 shrink-0 flex items-center justify-center rounded-full bg-gray-100 group-hover:bg-white transition-colors">
-                            {profile.platform === 'instagram' ? (
-                              <Instagram className="h-4 w-4 sm:h-5 sm:w-5 text-gray-700" />
-                            ) : (
-                              <Linkedin className="h-4 w-4 sm:h-5 sm:w-5 text-gray-700" />
-                            )}
-                          </div>
-                          
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h3 className="text-sm sm:text-base font-semibold truncate">
-                                {sanitizeUsername(profile.username, profile.platform)}
-                              </h3>
-                              <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 uppercase text-[10px] sm:text-xs font-semibold tracking-wider">
-                                {profile.platform === 'instagram' ? 'Instagram' : 'LinkedIn'}
-                              </Badge>
-                              
-                              {profile.scrape_status === 'pending' && (
-                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1 text-[10px] sm:text-xs">
-                                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                                  Pending
-                                </Badge>
-                              )}
-                              
-                              {profile.scrape_status === 'fetching' && (
-                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1 text-[10px] sm:text-xs">
-                                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                                  Fetching
-                                </Badge>
-                              )}
-                              
-                              {profile.scrape_status === 'scraping' && (
-                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1 text-[10px] sm:text-xs">
-                                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                                  Processing
-                                </Badge>
-                              )}
-                              
-                              {profile.scrape_status === 'failed' && (
-                                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 gap-1 text-[10px] sm:text-xs">
-                                  <X className="h-2.5 w-2.5" />
-                                  Failed
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-x-1.5 text-[10px] sm:text-xs text-gray-500">
-                              <Calendar className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-none" />
-                              <span>
-                                {profile.last_scraped 
-                                  ? `Updated ${formatDistanceToNow(new Date(profile.last_scraped), { addSuffix: true })}` 
-                                  : 'Never scraped'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-1.5 sm:gap-2 mt-auto pt-2 sm:pt-3 border-t border-gray-100">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="h-7 sm:h-8 gap-1 sm:gap-1.5 border-gray-200 text-gray-700 hover:bg-gray-50 rounded-full text-[10px] sm:text-xs sm:flex-1"
-                            onClick={() => fetchProfileStats(profile.id)}
-                          >
-                            <BarChart className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                            Stats
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => router.push(`/analysis/${profile.id}`)}
-                            className="h-7 sm:h-8 gap-1 sm:gap-1.5 border-gray-200 text-gray-700 hover:bg-gray-50 rounded-full text-[10px] sm:text-xs sm:flex-1"
-                          >
-                            <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                            Analysis
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => router.push(`/chat/${profile.id}`)}
-                            className="h-7 sm:h-8 gap-1 sm:gap-1.5 border-gray-200 text-gray-700 hover:bg-gray-50 rounded-full text-[10px] sm:text-xs sm:flex-1"
-                          >
-                            <MessageSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                            Chat
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="h-7 sm:h-8 text-gray-700 border-gray-200 hover:bg-gray-50 hover:text-red-600 rounded-full"
-                            onClick={() => {
-                              setDeleteProfileId(profile.id);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
         </div>
 
