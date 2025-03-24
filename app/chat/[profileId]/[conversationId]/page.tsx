@@ -700,33 +700,33 @@ export default function Chat() {
   return (
     <div className="flex h-screen flex-col bg-white">
       {/* Header */}
-      <div className="border-b p-3 sm:p-4 flex justify-between items-center bg-white shadow-sm">
-        <div className="flex items-center gap-2">
+      <div className="border-b p-2 sm:p-4 flex justify-between items-center bg-white shadow-sm">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => router.push("/chats")}
-            className="border-gray-200 h-8 text-xs sm:text-sm rounded-full"
+            className="border-gray-200 h-7 sm:h-8 text-xs sm:text-sm rounded-full"
           >
             <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
             Back
           </Button>
-          <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-gray-100">
+          <div className="flex h-7 w-7 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-gray-100">
             {profile?.platform === "instagram" ? (
-              <Instagram className="h-4 w-4 sm:h-5 sm:w-5 text-gray-700" />
+              <Instagram className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-gray-700" />
             ) : (
-              <Linkedin className="h-4 w-4 sm:h-5 sm:w-5 text-gray-700" />
+              <Linkedin className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-gray-700" />
             )}
           </div>
           <div>
-            <h1 className="text-sm sm:text-base font-semibold">
+            <h1 className="text-xs sm:text-base font-semibold truncate max-w-[120px] sm:max-w-none">
               {profile
                 ? sanitizeUsername(profile.username, profile.platform)
                 : ""}
             </h1>
             <Badge
               variant="outline"
-              className="text-[10px] sm:text-xs text-gray-600 bg-gray-50 border-gray-200 rounded-full"
+              className="text-[9px] sm:text-xs text-gray-600 bg-gray-50 border-gray-200 rounded-full"
             >
               {profile?.platform === "instagram" ? "Instagram" : "LinkedIn"}
             </Badge>
@@ -737,7 +737,7 @@ export default function Chat() {
           <Button
             variant="outline"
             size="sm"
-            className="gap-1 border-gray-200 h-8 text-xs sm:text-sm whitespace-nowrap rounded-full"
+            className="gap-1 border-gray-200 h-7 sm:h-8 text-xs sm:text-sm whitespace-nowrap rounded-full px-2 sm:px-3"
             onClick={handleStartNewChat}
           >
             <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -747,42 +747,38 @@ export default function Chat() {
           <Button
             variant="outline"
             size="sm"
-            className="gap-1 border-gray-200 h-8 text-xs sm:text-sm rounded-full"
+            className="gap-1 border-gray-200 h-7 sm:h-8 text-xs sm:text-sm rounded-full px-2 sm:px-3"
             onClick={() => router.push("/chats")}
           >
             <History className="h-3 w-3 sm:h-4 sm:w-4" />
             <span className="hidden xs:inline">History</span>
             <span className="xs:hidden">Past</span>
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1 border-gray-200 h-8 text-xs sm:text-sm rounded-full"
-            onClick={exportChat}
-          >
-            <Download className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden xs:inline">Export</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1 border-gray-200 h-8 text-xs sm:text-sm rounded-full"
-            onClick={() => router.push(`/analysis/${profileId}`)}
-          >
-            <BarChart2 className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden xs:inline">Analysis</span>
-          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
-                className="border-gray-200 h-8 w-8 p-0 rounded-full"
+                className="border-gray-200 h-7 sm:h-8 w-7 sm:w-8 p-0 rounded-full"
               >
                 <MoreVertical className="h-3.5 w-3.5 text-gray-700" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem 
+                className="text-sm cursor-pointer flex items-center gap-2"
+                onClick={exportChat}
+              >
+                <Download className="h-4 w-4" />
+                Export Chat
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className="text-sm cursor-pointer flex items-center gap-2"
+                onClick={() => router.push(`/analysis/${profileId}`)}
+              >
+                <BarChart2 className="h-4 w-4" />
+                View Analysis
+              </DropdownMenuItem>
               <DropdownMenuItem 
                 className="text-red-600 cursor-pointer flex items-center gap-2 text-sm"
                 onClick={() => openDeleteDialog("conversation")}
@@ -797,14 +793,14 @@ export default function Chat() {
 
       {/* Messages */}
       <div className="flex-1 bg-white flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
+        <div className="flex-1 overflow-y-auto px-3 sm:px-8 py-4 sm:py-6">
           <div className="max-w-3xl mx-auto">
             {messages.map((message) => (
-              <div key={message.id} className={`mb-8`}>
+              <div key={message.id} className={`mb-6 sm:mb-8`}>
                 {message.role === "assistant" && (
-                  <div className="flex items-center mb-2 text-xs text-gray-500">
-                    <div className="bg-gray-100 p-1 rounded-full mr-2">
-                      <div className="h-3.5 w-3.5 text-gray-600">
+                  <div className="flex items-center mb-1.5 sm:mb-2 text-[10px] sm:text-xs text-gray-500">
+                    <div className="bg-gray-100 p-1 rounded-full mr-1.5 sm:mr-2">
+                      <div className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-600">
                         <BotIcon />
                       </div>
                     </div>
@@ -821,27 +817,26 @@ export default function Chat() {
                     className={`
                       ${
                         message.role === "user"
-                          ? "bg-[#f8f9fa] border border-gray-200 text-gray-800 ml-12 group relative"
-                          : "bg-[#f8f9fa] border border-gray-200 text-gray-800 group relative"
-                      } rounded-2xl p-4 max-w-[85%] shadow-sm
+                          ? "bg-[#f8f9fa] border border-gray-200 text-gray-800 ml-8 sm:ml-12 group relative"
+                          : "bg-[#f8f9fa] border border-gray-200 text-gray-800 mr-4 sm:mr-8 group relative"
+                      } rounded-2xl p-3 sm:p-4 max-w-[90%] sm:max-w-[85%] shadow-sm
                     `}
                   >
                     {message.role === "user" ? (
                       <>
-                        <div className="text-sm">{message.content}</div>
+                        <div className="text-xs sm:text-sm">{message.content}</div>
                         <button 
                           onClick={() => openDeleteDialog("message", message)}
-                          className="absolute -right-2 -top-2 h-6 w-6 bg-gray-100 rounded-full border border-gray-300 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute -right-1.5 -top-1.5 sm:-right-2 sm:-top-2 h-5 w-5 sm:h-6 sm:w-6 bg-gray-100 rounded-full border border-gray-300 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <X className="h-3 w-3 text-gray-600" />
+                          <X className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-gray-600" />
                         </button>
                       </>
                     ) : (
                       <>
-                        <div className="text-sm leading-relaxed text-gray-800">
+                        <div className="text-xs sm:text-sm leading-relaxed text-gray-800">
                           {formatAIResponse(message.content)}
                         </div>
-                        {/* Only allow deleting user messages since AI messages depend on context */}
                       </>
                     )}
                   </div>
@@ -850,25 +845,25 @@ export default function Chat() {
             ))}
 
             {isThinking && (
-              <div className="mb-8">
-                <div className="flex items-center mb-2 text-xs text-gray-500">
-                  <div className="bg-gray-100 p-1 rounded-full mr-2">
-                    <Bot className="h-3.5 w-3.5 text-gray-600" />
+              <div className="mb-6 sm:mb-8">
+                <div className="flex items-center mb-1.5 sm:mb-2 text-[10px] sm:text-xs text-gray-500">
+                  <div className="bg-gray-100 p-1 rounded-full mr-1.5 sm:mr-2">
+                    <Bot className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-600" />
                   </div>
                   AI Assistant
                 </div>
-                <div className="border border-gray-200 bg-[#f8f9fa] rounded-2xl p-4 max-w-[85%] shadow-sm">
+                <div className="border border-gray-200 bg-[#f8f9fa] rounded-2xl p-3 sm:p-4 max-w-[90%] sm:max-w-[85%] shadow-sm">
                   <div className="flex space-x-1">
                     <div
-                      className="h-2 w-2 bg-gray-400 rounded-full animate-bounce"
+                      className="h-1.5 w-1.5 sm:h-2 sm:w-2 bg-gray-400 rounded-full animate-bounce"
                       style={{ animationDelay: "0s" }}
                     />
                     <div
-                      className="h-2 w-2 bg-gray-400 rounded-full animate-bounce"
+                      className="h-1.5 w-1.5 sm:h-2 sm:w-2 bg-gray-400 rounded-full animate-bounce"
                       style={{ animationDelay: "0.2s" }}
                     />
                     <div
-                      className="h-2 w-2 bg-gray-400 rounded-full animate-bounce"
+                      className="h-1.5 w-1.5 sm:h-2 sm:w-2 bg-gray-400 rounded-full animate-bounce"
                       style={{ animationDelay: "0.4s" }}
                     />
                   </div>
@@ -876,12 +871,12 @@ export default function Chat() {
               </div>
             )}
 
-            <div ref={messagesEndRef} className="h-10" />
+            <div ref={messagesEndRef} className="h-6 sm:h-10" />
           </div>
         </div>
 
         {/* Input area */}
-        <div className="border-t py-5 px-4 sm:px-8 bg-white">
+        <div className="border-t py-3 sm:py-5 px-3 sm:px-8 bg-white">
           <div className="max-w-2xl mx-auto">
             <div className="max-w-xl mx-auto">
               <form onSubmit={handleSubmit} className="relative">
@@ -889,19 +884,19 @@ export default function Chat() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask something about this profile..."
-                  className="w-full text-sm pl-12 pr-12 border border-gray-200 h-12 py-3 px-5 rounded-full focus-visible:ring-0 focus:border-gray-300 shadow-none bg-[#f8f9fa] hover:bg-gray-100 transition-colors"
+                  className="w-full text-xs sm:text-sm pl-10 sm:pl-12 pr-10 sm:pr-12 border border-gray-200 h-10 sm:h-12 py-2 sm:py-3 px-4 sm:px-5 rounded-full focus-visible:ring-0 focus:border-gray-300 shadow-none bg-[#f8f9fa] hover:bg-gray-100 transition-colors"
                   disabled={loading}
                 />
                 <Button
                   type="submit"
                   size="icon"
                   disabled={loading || !input.trim()}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-[#f8f9fa] border border-gray-200 hover:bg-gray-100 flex items-center justify-center shadow-none transition-colors"
+                  className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-[#f8f9fa] border border-gray-200 hover:bg-gray-100 flex items-center justify-center shadow-none transition-colors"
                 >
                   {loading ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-700" />
+                    <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin text-gray-700" />
                   ) : (
-                    <SendHorizontal className="h-3.5 w-3.5 text-gray-700" />
+                    <SendHorizontal className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-700" />
                   )}
                 </Button>
               </form>
